@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/addExpense"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
@@ -22,17 +23,21 @@
         <EditText
             android:id="@+id/txtSum"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="fill_parent"
             android:layout_weight="1"
             android:background="@drawable/rounded_translucent_textview"
-            android:inputType="numberDecimal" >
+            android:editable="false"
+            android:enabled="false"
+            android:inputType="none|numberDecimal"
+            style="@style/large_text" >
+
         </EditText>
 
         <Button
             android:id="@+id/btnDel"
             style="@style/large_text"
             android:layout_width="wrap_content"
-            android:layout_height="fill_parent"
+            android:layout_height="wrap_content"
             android:background="@drawable/rounded_translucent_button"
             android:text="DEL" />
 
