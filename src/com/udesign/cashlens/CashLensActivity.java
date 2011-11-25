@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.graphics.Color;
 import android.hardware.Camera;
+import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -120,17 +121,22 @@ public class CashLensActivity extends Activity {
 				int format, int width,
 				int height) {
 			Camera.Parameters parameters = camera.getParameters();
-			if(parameters != null && parameters.getSupportedPreviewSizes() != null)
+			if(parameters != null)
 			{
-				Camera.Size size = getBestPreviewSize(width, height,
-						parameters);
-
+				Camera.Size size = null;
+				if(parameters.getSupportedPreviewSizes() != null)
+					size = getBestPreviewSize(width, height,
+							parameters);
+				
 				if (size != null) {
 					parameters.setPreviewSize(size.width, size.height);
-					camera.setParameters(parameters);
-					camera.startPreview();
-					inPreview = true;
+				} else {
+					parameters.setPreviewSize(cameraSurface.getWidth(), cameraSurface.getHeight());
 				}
+				camera.setParameters(parameters);
+				camera.startPreview();
+				inPreview = true;
+
 			} else {
 				msg(msgTitle2, msgMsg2);
 			}
