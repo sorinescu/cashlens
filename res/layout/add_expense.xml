@@ -180,7 +180,57 @@
             android:layout_height="fill_parent"
             android:layout_weight="1"
             android:background="@drawable/rounded_translucent_button"
-            android:text="" />
+            android:text=""
+            android:visibility="invisible" />
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/linearLayout6"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/linearLayout5" >
+
+        <Spinner
+            android:id="@+id/spinAccount"
+            android:prompt="@string/select_an_account"
+            style="@style/large_text"
+            android:background="@drawable/rounded_translucent_spinner"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:padding="8sp"
+            android:layout_weight="1" />
+
+        <Spinner
+            android:id="@+id/spinCurrency"
+            style="@style/large_text"
+            android:background="@drawable/rounded_translucent_spinner"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:padding="8sp"
+            android:layout_weight="2" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/btnRec"
+        style="@style/large_text"
+        android:src="@drawable/record_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toLeftOf="@+id/btnShoot"
+        android:background="@drawable/rounded_translucent_button"
+        android:layout_weight="1" />
+    
+    <ImageButton
+        android:id="@+id/btnShoot"
+        style="@style/large_text"
+        android:src="@drawable/camera_aperture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/rounded_translucent_button"
+        android:layout_weight="1" />
+    
 </RelativeLayout>

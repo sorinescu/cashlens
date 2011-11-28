@@ -10,8 +10,10 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 public class AddExpenseActivity extends Activity implements SurfaceHolder.Callback 
@@ -25,6 +27,8 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	private Button mDelButton;
 	private Button mDotButton;
 	private TextView mExpenseText;
+	private Spinner mAccountSpinner;
+	private Spinner mCurrencySpinner;
 	public String mExpenseInt;
 	public String mExpenseFrac;
 	public boolean mExpenseDot;
@@ -66,7 +70,25 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		mDelButton = (Button)findViewById(R.id.btnDel);
 		mDotButton = (Button)findViewById(R.id.btnDot);
 		
-		SurfaceHolder holder = mCameraPreview.getHolder();
+		mAccountSpinner = (Spinner)findViewById(R.id.spinAccount);
+		mCurrencySpinner = (Spinner)findViewById(R.id.spinCurrency);
+		
+		// TEST DATA
+		ArrayAdapter<CharSequence> adapter = new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item);
+	    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+	    adapter.add("Cash");
+	    adapter.add("Maestro");
+	    mAccountSpinner.setAdapter(adapter);
+	    
+		// TEST DATA
+		ArrayAdapter<CharSequence> adapter2 = new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item);
+	    adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+	    adapter2.add("RON");
+	    adapter2.add("USD");
+	    adapter2.add("EUR");
+	    mCurrencySpinner.setAdapter(adapter2);
+	    
+	    SurfaceHolder holder = mCameraPreview.getHolder();
 		holder.addCallback(this);
 		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 		
