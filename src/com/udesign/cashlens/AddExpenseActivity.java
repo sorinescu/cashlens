@@ -1,37 +1,54 @@
 package com.udesign.cashlens;
 
 import java.io.IOException;
-
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import android.app.Activity;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.hardware.Camera;
+import android.hardware.Camera.AutoFocusCallback;
+import android.hardware.Camera.Parameters;
+import android.hardware.Camera.PictureCallback;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.RelativeLayout;
+import android.widget.SimpleCursorAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
-public class AddExpenseActivity extends Activity implements SurfaceHolder.Callback 
+public class AddExpenseActivity extends Activity implements SurfaceHolder.Callback, AutoFocusCallback, PictureCallback
 {
-	 
 	private RelativeLayout mLayout;
 	private SurfaceView mCameraPreview;
 	private android.hardware.Camera mCamera;
-	private boolean mInPreview;
+	private boolean mInPreview = false;
 	private Button mNumButtons[];
 	private Button mDelButton;
 	private Button mDotButton;
 	private TextView mExpenseText;
 	private Spinner mAccountSpinner;
 	private Spinner mCurrencySpinner;
+	private ImageButton mSnapshotButton;
+	private boolean mShouldTakePicture = false;
+	private boolean mInFocus = false;
+	private Handler mAutoFocusStarter;
+	private Runnable mAutoFocusTask;
+	private ImageButton mRecordButton;
+	private ExpenseStorage mStorage;
 	public String mExpenseInt;
 	public String mExpenseFrac;
-	public boolean mExpenseDot;
+	public boolean mExpenseDot = false;
 	
 	/* (non-Javadoc)
 	 * @see android.app.Activity#onCreate(android.os.Bundle)
@@ -42,15 +59,21 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.add_expense);
 		
+		try 
+		{
+			mStorage = new ExpenseStorage(this);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		mExpenseInt = "";
 		mExpenseFrac = "";
-		mExpenseDot = false;
 		
 		mLayout = (RelativeLayout)findViewById(R.id.addExpense);
 		mLayout.setBackgroundColor(Color.argb(0, 0, 0, 0));    	
 
 		mCameraPreview = (SurfaceView)findViewById(R.id.cameraPreview);
-		mInPreview = false;
 
 		mExpenseText = (TextView)findViewById(R.id.txtSum);
 		updateExpenseText();
@@ -70,15 +93,16 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		mDelButton = (Button)findViewById(R.id.btnDel);
 		mDotButton = (Button)findViewById(R.id.btnDot);
 		
+		mSnapshotButton = (ImageButton)findViewById(R.id.btnShoot);
+		mRecordButton = (ImageButton)findViewById(R.id.btnRec);
+
 		mAccountSpinner = (Spinner)findViewById(R.id.spinAccount);
 		mCurrencySpinner = (Spinner)findViewById(R.id.spinCurrency);
 		
 		// TEST DATA
-		ArrayAdapter<CharSequence> adapter = new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item);
-	    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-	    adapter.add("Cash");
-	    adapter.add("Maestro");
-	    mAccountSpinner.setAdapter(adapter);
+		BaseAdapter accountsAdapter = mStorage.accountsAdapter();
+		//accountsAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+	    mAccountSpinner.setAdapter(accountsAdapter);
 	    
 		// TEST DATA
 		ArrayAdapter<CharSequence> adapter2 = new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item);
@@ -92,6 +116,8 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		holder.addCallback(this);
 		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 		
+		// Click listeners
+
 		for (int i=0; i<10; ++i)
 			mNumButtons[i].setOnClickListener(new NumericButtonClickListener(this, i));
 		
@@ -123,9 +149,28 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 				parent.updateExpenseText();
 			}
 		});
+		
+		mSnapshotButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) 
+			{
+				// picture is taken when autofocus is complete
+				AddExpenseActivity parent = AddExpenseActivity.this;
+				
+				if (parent.dataValid())
+					parent.mShouldTakePicture = true;
+			}
+		});
 	}
 
-	public void updateExpenseText()
+	public boolean dataValid()
+	{
+		if (getExpenseFixedPoint() != 0)
+			return true;
+		
+		return false;
+	}
+	
+	protected String getExpenseText()
 	{
 		String txt;
 		
@@ -137,7 +182,22 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		if (mExpenseDot && mExpenseFrac.length() > 0)
 			txt += "." + mExpenseFrac;
 		
-		mExpenseText.setText(txt);
+		return txt;
+	}
+	
+	protected int getExpenseFixedPoint()
+	{
+		int val = Integer.parseInt(mExpenseInt) * 100;
+		
+		if (mExpenseDot)
+			val += Integer.parseInt(mExpenseFrac) % 100;	// to be safe
+		
+		return val;
+	}
+	
+	public void updateExpenseText()
+	{
+		mExpenseText.setText(getExpenseText());
 	}
 	
 	/* (non-Javadoc)
@@ -146,6 +206,12 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	@Override
 	protected void onDestroy() 
 	{
+		if (mAutoFocusStarter != null)
+		{
+			mAutoFocusStarter.removeCallbacks(mAutoFocusTask);
+			mAutoFocusStarter = null;
+		}
+		
 		if (mCamera != null)
 		{
 			if (mInPreview)
@@ -153,10 +219,31 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	        mCamera.release();
 	        mCamera = null;
 		}
+		
+		if (mStorage != null)
+		{
+			mStorage.close();
+			mStorage = null;
+		}
 
 		super.onDestroy();
 	}
 
+	protected void setCameraDisplayOrientation_2_2(int angle)
+	{
+		// find Android 2.2 setDisplayOrientation() on camera and use it to set 90 deg orientation
+		try
+	    {
+			Method downPolymorphic = mCamera.getClass().getMethod("setDisplayOrientation", new Class[] { int.class });
+	        if (downPolymorphic != null)
+	            downPolymorphic.invoke(mCamera, new Object[] { angle });
+	    }
+	    catch (Exception e1)
+	    {
+	    	// ignore
+	    }	
+	}
+	
 	public void surfaceChanged(SurfaceHolder holder, int format, int width,
 			int height) 
 	{
@@ -164,15 +251,44 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
         // the preview.
         Camera.Parameters parameters = mCamera.getParameters();
         parameters.setPreviewSize(width, height);
-        mCamera.setParameters(parameters);
+    
+        // for 2.2+, use standard (working) method to put camera in portrait mode
+        if (Integer.parseInt(Build.VERSION.SDK) >= 8)
+            setCameraDisplayOrientation_2_2(90);
+        else
+        {
+        	// use 2.1 method (buggy, doesn't work on all devices)
+            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT)
+            {
+                parameters.set("orientation", "portrait");
+                parameters.set("rotation", 90);
+            }
+            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)
+            {
+                parameters.set("orientation", "landscape");
+                parameters.set("rotation", 90);
+            }
+        }        
+
+        try
+        {
+        	mCamera.setParameters(parameters);
+        }
+        catch (Exception e)
+        {
+        	// ignore
+        }
+        
         mCamera.startPreview();
         mInPreview = true;
+
+        startAutoFocusIfPossible();
 	}
 
 	public void surfaceCreated(SurfaceHolder holder) 
 	{
         // The Surface has been created, acquire the camera and tell it where
-        // to draw.
+        // to draw
         mCamera = Camera.open();
         try 
         {
@@ -189,7 +305,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	{
         // Surface will be destroyed when we return, so stop the preview.
         // Because the CameraDevice object is not a shared resource, it's very
-        // important to release it when the activity is paused.
+        // important to release it when the activity is paused
         if (mCamera != null)
         {
 			if (mInPreview)
@@ -197,6 +313,103 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	        mCamera.release();
 	        mCamera = null;
         }
+	}
+
+	public void onAutoFocus(boolean success, Camera camera) 
+	{
+		if (success)
+		{
+			mInFocus = true;
+			takePictureIfNecessary();
+		}
+		
+		startAutoFocusIfPossible();
+	}
+	
+	private void startAutoFocusIfPossible()
+	{
+		// first, stop auto focus if active
+		mInFocus = false;
+		mCamera.cancelAutoFocus();
+		
+		// try to set a continuous focus mode (preferably picture, but video is also ok)
+        try
+        {      	
+        	Camera.Parameters params = mCamera.getParameters();
+        	String focusMode;
+        
+        	try
+        	{
+        		Field continuousPicFocus = params.getClass().getField("FOCUS_MODE_CONTINUOUS_PICTURE");
+        		focusMode = (String)continuousPicFocus.get(params);
+        	}
+        	catch (Exception e1)
+        	{
+        		// continuous picture focus is not present (API level 14); try other mode
+        		try
+        		{
+        			Field continuousVideoFocus = params.getClass().getField("FOCUS_MODE_CONTINUOUS_PICTURE");
+            		focusMode = (String)continuousVideoFocus.get(params);
+        		}
+        		catch (Exception e2)
+        		{
+        			focusMode = Parameters.FOCUS_MODE_AUTO;	// default
+        		}
+        	}
+        	
+        	params.setFocusMode(focusMode);
+        	mCamera.setParameters(params);
+        	
+        	if (focusMode != Parameters.FOCUS_MODE_AUTO)
+        		mCamera.autoFocus(this);
+        	else
+        	{
+        		// start autofocus some time in the future, to avoid an infinite loop in onAutoFocus 
+        		if (mAutoFocusStarter == null)
+        			mAutoFocusStarter = new Handler();
+        		
+        		if (mAutoFocusTask == null)
+        			mAutoFocusTask = new Runnable() {
+						public void run() 
+						{
+							mCamera.autoFocus(AddExpenseActivity.this);
+						}
+					};
+					
+        		mAutoFocusStarter.removeCallbacks(mAutoFocusTask);
+        		mAutoFocusStarter.postDelayed(mAutoFocusTask, 500);
+        	}
+        }
+        catch (Exception e)
+        {
+        	// autofocus isn't present on all cameras; assume in focus
+        	mInFocus = true;
+        }
+	}
+	
+	private void takePictureIfNecessary()
+	{
+		if (mInFocus && mShouldTakePicture)
+		{
+			mShouldTakePicture = false;
+			mCamera.takePicture(null, null, this);
+		}
+	}
+
+	public void onPictureTaken(byte[] data, Camera camera) 
+	{
+		// TODO fix this
+		/*
+		try 
+		{
+			mStorage.saveExpense(data);
+			Toast.makeText(this, R.string.expense_added, Toast.LENGTH_SHORT).show();
+		} catch (IOException e) 
+		{
+			e.printStackTrace();
+			Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+		}
+		*/
 	}
 }
 
@@ -214,7 +427,10 @@ class NumericButtonClickListener implements OnClickListener
 	public void onClick(View v) 
 	{
 		if (mParent.mExpenseDot)
-			mParent.mExpenseFrac += Integer.toString(mFigure);
+		{
+			if (mParent.mExpenseFrac.length() < 2)
+				mParent.mExpenseFrac += Integer.toString(mFigure);
+		}
 		else
 			mParent.mExpenseInt +=  Integer.toString(mFigure);
 
