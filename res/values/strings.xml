@@ -3,4 +3,8 @@
     <string name="app_name">Cash Lens</string>
     <string name="add_expense">Add expense</string>
     <string name="select_an_account">Select an account</string>
+    <string name="expense_added">Expense added.</string>
+    <string name="cant_create_dir">Can\'t create directory\ </string>
+    <string name="cant_write_dir">Can\'t write into\ </string>
+    <string name="cant_create_file">Can\'t create file\ </string>
 </resources>
