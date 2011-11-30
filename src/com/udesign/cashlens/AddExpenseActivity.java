@@ -3,6 +3,11 @@ package com.udesign.cashlens;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Date;
+
+import com.udesign.cashlens.CashLensStorage.Account;
+import com.udesign.cashlens.CashLensStorage.Currency;
+
 import android.app.Activity;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -13,16 +18,14 @@ import android.hardware.Camera.PictureCallback;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
-import android.widget.SimpleCursorAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -38,14 +41,16 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	private Button mDotButton;
 	private TextView mExpenseText;
 	private Spinner mAccountSpinner;
+	private ArrayAdapterIDAndName<Account> mAccountsAdapter;
 	private Spinner mCurrencySpinner;
+	private ArrayAdapterIDAndName<Currency> mCurrenciesAdapter;
 	private ImageButton mSnapshotButton;
 	private boolean mShouldTakePicture = false;
 	private boolean mInFocus = false;
 	private Handler mAutoFocusStarter;
 	private Runnable mAutoFocusTask;
 	private ImageButton mRecordButton;
-	private ExpenseStorage mStorage;
+	private CashLensStorage mStorage;
 	public String mExpenseInt;
 	public String mExpenseFrac;
 	public boolean mExpenseDot = false;
@@ -61,9 +66,9 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		
 		try 
 		{
-			mStorage = new ExpenseStorage(this);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			mStorage = CashLensStorage.instance(this);
+		} catch (IOException e) 
+		{
 			e.printStackTrace();
 		}
 		
@@ -99,18 +104,11 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		mAccountSpinner = (Spinner)findViewById(R.id.spinAccount);
 		mCurrencySpinner = (Spinner)findViewById(R.id.spinCurrency);
 		
-		// TEST DATA
-		BaseAdapter accountsAdapter = mStorage.accountsAdapter();
-		//accountsAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-	    mAccountSpinner.setAdapter(accountsAdapter);
+		mAccountsAdapter = mStorage.accountsAdapter(this);
+	    mAccountSpinner.setAdapter(mAccountsAdapter);
 	    
-		// TEST DATA
-		ArrayAdapter<CharSequence> adapter2 = new ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item);
-	    adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-	    adapter2.add("RON");
-	    adapter2.add("USD");
-	    adapter2.add("EUR");
-	    mCurrencySpinner.setAdapter(adapter2);
+		mCurrenciesAdapter = mStorage.currenciesAdapter(this);
+	    mCurrencySpinner.setAdapter(mCurrenciesAdapter);
 	    
 	    SurfaceHolder holder = mCameraPreview.getHolder();
 		holder.addCallback(this);
@@ -187,9 +185,12 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	
 	protected int getExpenseFixedPoint()
 	{
-		int val = Integer.parseInt(mExpenseInt) * 100;
+		int val = 0;
 		
-		if (mExpenseDot)
+		if (mExpenseInt.length() > 0)
+			val = Integer.parseInt(mExpenseInt) * 100;
+		
+		if (mExpenseDot && mExpenseFrac.length() > 0)
 			val += Integer.parseInt(mExpenseFrac) % 100;	// to be safe
 		
 		return val;
@@ -317,6 +318,9 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 
 	public void onAutoFocus(boolean success, Camera camera) 
 	{
+		if (mCamera == null)
+			return;
+		
 		if (success)
 		{
 			mInFocus = true;
@@ -372,7 +376,8 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
         			mAutoFocusTask = new Runnable() {
 						public void run() 
 						{
-							mCamera.autoFocus(AddExpenseActivity.this);
+							if (AddExpenseActivity.this != null &&  mCamera != null)
+								mCamera.autoFocus(AddExpenseActivity.this);
 						}
 					};
 					
@@ -398,18 +403,29 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 
 	public void onPictureTaken(byte[] data, Camera camera) 
 	{
-		// TODO fix this
-		/*
 		try 
 		{
-			mStorage.saveExpense(data);
+			Account account = (Account)mAccountSpinner.getSelectedItem();
+			if (account == null)
+				return;
+			Log.w("onPictureTaken", "Selected account is " + account.name + ", id " + Integer.toString(account.id));
+			
+			Currency currency = (Currency)mCurrencySpinner.getSelectedItem();
+			if (currency == null)
+				return;
+			Log.w("onPictureTaken", "Selected currency is " + currency.name + ", id " + Integer.toString(currency.id));
+			
+			mStorage.saveExpense(account, currency, getExpenseFixedPoint(), new Date(), data);
 			Toast.makeText(this, R.string.expense_added, Toast.LENGTH_SHORT).show();
-		} catch (IOException e) 
+			
+			// End activity.
+			finish();
+		} 
+		catch (IOException e) 
 		{
 			e.printStackTrace();
 			Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
 		}
-		*/
 	}
 }
 
