@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="add">Add</string>
+    <string name="delete">Delete</string>
     <string name="app_name">Cash Lens</string>
     <string name="add_expense">Add expense</string>
     <string name="select_an_account">Select an account</string>
@@ -7,4 +9,11 @@
     <string name="cant_create_dir">Can\'t create directory\ </string>
     <string name="cant_write_dir">Can\'t write into\ </string>
     <string name="cant_create_file">Can\'t create file\ </string>
+    <string name="cant_insert">Can\'t insert new object into database.</string>
+    <string name="manage_accounts">Accounts</string>
+    <string name="manage_currencies">Currencies</string>
+    <string name="new_account">New account</string>
+    <string name="delete_account">Delete account</string>
+    <string name="enter_account_name">Please provide a name for the account.</string>
+    <string name="are_you_sure">Are you sure ?</string>
 </resources>
