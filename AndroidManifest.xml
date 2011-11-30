@@ -29,6 +29,10 @@
             android:name=".AddExpenseActivity"
             android:screenOrientation="portrait" >
         </activity>
-   </application>
+        <activity
+            android:label="@string/manage_accounts"
+            android:name=".AccountsActivity" >
+        </activity>
+    </application>
 
 </manifest>
