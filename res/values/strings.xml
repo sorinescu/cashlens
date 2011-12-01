@@ -13,7 +13,9 @@
     <string name="manage_accounts">Accounts</string>
     <string name="manage_currencies">Currencies</string>
     <string name="new_account">New account</string>
+    <string name="account_added">Account added</string>
     <string name="delete_account">Delete account</string>
+    <string name="account_deleted">Account deleted</string>
     <string name="enter_account_name">Please provide a name for the account.</string>
     <string name="are_you_sure">Are you sure ?</string>
 </resources>
