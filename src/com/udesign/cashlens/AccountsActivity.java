@@ -11,7 +11,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.text.Editable;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -19,7 +18,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
+import android.widget.Toast;
 import android.widget.ExpandableListView.OnGroupClickListener;
+import android.widget.ExpandableListView.OnGroupCollapseListener;
 
 /**
  * @author sorin
@@ -30,6 +31,7 @@ public class AccountsActivity extends Activity
 	private CashLensStorage mStorage;
 	private ExpandableListView mAccountsList;
 	private Account mSelectedAccount = null;
+	private boolean mIgnoreCollapseEvents = false;
 	
 	/* (non-Javadoc)
 	 * @see android.app.Activity#onCreate(android.os.Bundle)
@@ -52,13 +54,33 @@ public class AccountsActivity extends Activity
 
 		AccountsExpandableListAdapter adapter = new AccountsExpandableListAdapter(this);
 		mAccountsList.setAdapter(adapter);
+
+		mAccountsList.setOnGroupCollapseListener(new OnGroupCollapseListener()
+		{
+			public void onGroupCollapse(int groupPosition)
+			{
+				// Android 2.1 doesn't call onGroupClick when collapsing groups.
+				// We only collapse groups by clicking, so behave just like onGroupClick, unless mIgnoreCollapseEvents is set.
+				
+				if (mIgnoreCollapseEvents)
+					return;
+				
+				int itemPos = mAccountsList.getFlatListPosition(ExpandableListView.getPackedPositionForGroup(groupPosition));
+				mSelectedAccount = (Account)mAccountsList.getItemAtPosition(itemPos);
+				mAccountsList.setItemChecked(itemPos, true);
+				
+				Log.w("GroupClicked", "Collapsed (but selected) group: " + mSelectedAccount.name);
+			}
+		});
 		
 		mAccountsList.setOnGroupClickListener(new OnGroupClickListener()
 		{
 			public boolean onGroupClick(ExpandableListView parent, View v,
 					int groupPosition, long id)
 			{
-				mSelectedAccount = (Account)mAccountsList.getItemAtPosition(groupPosition);
+				int itemPos = mAccountsList.getFlatListPosition(ExpandableListView.getPackedPositionForGroup(groupPosition));
+				mSelectedAccount = (Account)mAccountsList.getItemAtPosition(itemPos);
+				mAccountsList.setItemChecked(itemPos, true);
 				
 				Log.w("GroupClicked", "Selected group: " + mSelectedAccount.name);
 				return false;
@@ -161,6 +183,7 @@ public class AccountsActivity extends Activity
 		try
 		{
 			mStorage.addAccount(account);
+			Toast.makeText(this, R.string.account_added, Toast.LENGTH_SHORT).show();
 		} 
 		catch (IOException e)
 		{
@@ -177,6 +200,7 @@ public class AccountsActivity extends Activity
 		{
 			mStorage.deleteAccount(mSelectedAccount);
 			mSelectedAccount = null;
+			Toast.makeText(this, R.string.account_deleted, Toast.LENGTH_SHORT).show();
 		} 
 		catch (IOException e)
 		{

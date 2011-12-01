@@ -9,6 +9,7 @@ import com.udesign.cashlens.CashLensStorage.Account;
 
 import android.content.Context;
 import android.database.DataSetObserver;
+import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,14 +22,14 @@ import android.widget.TextView;
  */
 public class AccountsExpandableListAdapter extends BaseExpandableListAdapter
 {
-	Context mContext;
-	CashLensStorage mStorage;
-	ArrayAdapterIDAndName<Account> mAccountsAdapter;
+	private Context mContext;
+	private CashLensStorage mStorage;
+	private ArrayAdapterIDAndName<Account> mAccountsAdapter;
+	private int mGroupLeftPadding = 0;
 	
 	private static final int ID_POS = 0;
 	private static final int NAME_POS = 1;
 	private static final int FIELDS_COUNT = 2;
-
 	/**
 	 * 
 	 */
@@ -55,6 +56,11 @@ public class AccountsExpandableListAdapter extends BaseExpandableListAdapter
 				notifyDataSetChanged();
 			}
 		});
+		
+		// Get expander bounds and compute group item padding
+		Drawable expander = context.getResources().getDrawable(R.drawable.expander_group);
+		//mGroupLeftPadding = expander.getBounds().width() + 4;
+		mGroupLeftPadding = expander.getIntrinsicWidth() + 4;
 	}
 
 	/* (non-Javadoc)
@@ -144,7 +150,10 @@ public class AccountsExpandableListAdapter extends BaseExpandableListAdapter
         if (convertView == null) 
         {
             LayoutInflater inflater = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            convertView = inflater.inflate(android.R.layout.simple_expandable_list_item_1, null);
+            convertView = inflater.inflate(android.R.layout.simple_list_item_single_choice, null);
+
+            // Set left padding for group indicator
+            convertView.setPadding(mGroupLeftPadding, 0, 0, 0);
         }
         
         TextView tv = (TextView)convertView.findViewById(android.R.id.text1);
