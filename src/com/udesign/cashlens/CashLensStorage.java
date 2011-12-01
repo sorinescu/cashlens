@@ -6,8 +6,13 @@ package com.udesign.cashlens;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.Random;
+import java.util.TimeZone;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -83,9 +88,10 @@ public final class CashLensStorage
 		public static void onUpgrade(SQLiteDatabase db, int oldVersion,
 				int newVersion)
 		{
+			// TODO this is not acceptable; upgrade DB
 			Log.w(AccountsTable.class.getName(),
 					"Upgrading database from version " + oldVersion + " to "
-					+ newVersion + ", which will destroy all old data");
+							+ newVersion + ", which will destroy all old data");
 			db.execSQL("DROP TABLE IF EXISTS " + AccountsTable.TABLE_NAME);
 			onCreate(db);
 		}
@@ -136,14 +142,36 @@ public final class CashLensStorage
 		public static void onUpgrade(SQLiteDatabase db, int oldVersion,
 				int newVersion)
 		{
+			// TODO this is not acceptable; upgrade DB
 			Log.w(AccountsTable.class.getName(),
 					"Upgrading database from version " + oldVersion + " to "
-					+ newVersion + ", which will destroy all old data");
+							+ newVersion + ", which will destroy all old data");
 			db.execSQL("DROP TABLE IF EXISTS " + CurrenciesTable.TABLE_NAME);
 			onCreate(db);
 		}
 	}
 
+	/**
+	 * Expense data.
+	 */
+	public static class Expense
+	{
+		int id;
+		Date date;
+		int accountId;
+		int amount;	// fixed point
+		int currencyId;
+		String description;
+		String imagePath;
+		String audioPath;
+		
+		public String amountToString()
+		{
+			return Integer.toString(amount / 100) + "." + 
+				Integer.toString(amount % 100);
+		}
+	}
+	
 	/**
 	 * Expenses DB table structure.
 	 */
@@ -157,9 +185,9 @@ public final class CashLensStorage
 		}
 
 		/**
-		 * The date of the expense (GMT).
+		 * The date of the expense (UTC).
 		 * <P>
-		 * Type: TEXT
+		 * Type: INTEGER
 		 * </P>
 		 */
 		public static final String DATE = "date";
@@ -218,23 +246,27 @@ public final class CashLensStorage
 					+ ExpensesTable._ID + " INTEGER PRIMARY KEY,"
 					+ ExpensesTable.ACCOUNT + " INTEGER,"
 					+ ExpensesTable.CURRENCY + " INTEGER,"
-					+ ExpensesTable.AMOUNT + " INTEGER," + ExpensesTable.DATE
-					+ " TEXT NOT NULL," + ExpensesTable.DESCRIPTION + " TEXT,"
+					+ ExpensesTable.AMOUNT + " INTEGER," 
+					+ ExpensesTable.DATE + " INTEGER NOT NULL," 
+					+ ExpensesTable.DESCRIPTION + " TEXT,"
 					+ ExpensesTable.IMAGE_FILENAME + " TEXT,"
-					+ ExpensesTable.AUDIO_FILENAME + " TEXT," + "FOREIGN KEY ("
-					+ ExpensesTable.ACCOUNT + ") REFERENCES "
-					+ AccountsTable.TABLE_NAME + "(" + AccountsTable._ID + "),"
-					+ "FOREIGN KEY (" + ExpensesTable.CURRENCY
-					+ ") REFERENCES " + CurrenciesTable.TABLE_NAME + "("
-					+ CurrenciesTable._ID + ")" + ");");
+					+ ExpensesTable.AUDIO_FILENAME + " TEXT," 
+					+ "FOREIGN KEY ("
+						+ ExpensesTable.ACCOUNT + ") REFERENCES "
+						+ AccountsTable.TABLE_NAME + "(" + AccountsTable._ID + "),"
+					+ "FOREIGN KEY (" 
+						+ ExpensesTable.CURRENCY+ ") REFERENCES " 
+						+ CurrenciesTable.TABLE_NAME + "(" + CurrenciesTable._ID + ")" 
+					+ ");");
 		}
 
 		public static void onUpgrade(SQLiteDatabase db, int oldVersion,
 				int newVersion)
 		{
+			// TODO this is not acceptable; upgrade DB
 			Log.w(ExpensesTable.class.getName(),
 					"Upgrading database from version " + oldVersion + " to "
-					+ newVersion + ", which will destroy all old data");
+							+ newVersion + ", which will destroy all old data");
 			db.execSQL("DROP TABLE IF EXISTS " + ExpensesTable.TABLE_NAME);
 			onCreate(db);
 		}
@@ -265,7 +297,7 @@ public final class CashLensStorage
 	}
 
 	public static CashLensStorage instance(Context currentContext)
-	throws IOException
+			throws IOException
 	{
 		// use the global application context for the singleton, not the
 		// received context
@@ -285,8 +317,7 @@ public final class CashLensStorage
 		// content manager
 		File noMedia = new File(storageDirectory(DataType.ROOT), ".nomedia");
 		if (!noMedia.exists() && !noMedia.createNewFile())
-			throw new IOException(mContext
-					.getString(R.string.cant_create_file)
+			throw new IOException(mContext.getString(R.string.cant_create_file)
 					+ noMedia.getAbsolutePath());
 
 		// Create/open database
@@ -305,7 +336,7 @@ public final class CashLensStorage
 		if (mHelper != null)
 			mHelper.close();
 	}
-	
+
 	protected SQLiteDatabase db()
 	{
 		return mHelper.getWritableDatabase();
@@ -361,6 +392,20 @@ public final class CashLensStorage
 
 		return newFile;
 	}
+	
+	protected static long dateToUTCInt(Date date)
+	{
+		Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+		cal.setTime(date);
+		return cal.getTime().getTime();
+	}
+
+	protected static Date dateFromUTCInt(long utcTime)
+	{
+		Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+		cal.setTimeInMillis(utcTime);
+		return cal.getTime();
+	}
 
 	protected enum DataType
 	{
@@ -375,7 +420,7 @@ public final class CashLensStorage
 			return mSoundStorageDir;
 
 		String dir = Environment.getExternalStorageDirectory()
-		.getAbsolutePath();
+				.getAbsolutePath();
 		dir += "/Android/data/" + mContext.getPackageName() + "/files/";
 		Log.i("ExpenseStorage", "App storage dir is '" + dir + "'");
 
@@ -441,8 +486,8 @@ public final class CashLensStorage
 
 	protected void readCurrencies()
 	{
-		Cursor cursor = db().query(CurrenciesTable.TABLE_NAME, null, null, null,
-				null, null, CurrenciesTable.NAME);
+		Cursor cursor = db().query(CurrenciesTable.TABLE_NAME, null, null,
+				null, null, null, CurrenciesTable.NAME);
 
 		mCurrencies.clear();
 
@@ -490,28 +535,32 @@ public final class CashLensStorage
 	 *            Optional JPEG file path for expense.
 	 * @param audioFilePath
 	 *            Optional audio file path for expense.
+	 * @throws IOException 
 	 */
-	protected void saveExpenseToDB(Account account, Currency currency,
-			int amount, Date date, String description, String imageFilePath,
-			String audioFilePath)
+	protected void saveExpenseToDB(Expense expense) throws IOException
 	{
 		ContentValues values = new ContentValues();
-		values.put(ExpensesTable.ACCOUNT, account.id);
-		values.put(ExpensesTable.CURRENCY, currency.id);
-		values.put(ExpensesTable.AMOUNT, amount);
-		values.put(ExpensesTable.DATE, date.toGMTString());
-		values.put(ExpensesTable.DESCRIPTION, description);
-		values.put(ExpensesTable.IMAGE_FILENAME, imageFilePath);
-		values.put(ExpensesTable.AUDIO_FILENAME, audioFilePath);
+		values.put(ExpensesTable.ACCOUNT, expense.accountId);
+		values.put(ExpensesTable.CURRENCY, expense.currencyId);
+		values.put(ExpensesTable.AMOUNT, expense.amount);
+		values.put(ExpensesTable.DATE, dateToUTCInt(expense.date));
+		values.put(ExpensesTable.DESCRIPTION, expense.description);
+		values.put(ExpensesTable.IMAGE_FILENAME, expense.imagePath);
+		values.put(ExpensesTable.AUDIO_FILENAME, expense.audioPath);
 
-		db().insert(ExpensesTable.TABLE_NAME, null, values);
-
-		// TODO notify potential users of expense data that a new one is available
+		long id = db().insert(ExpensesTable.TABLE_NAME, null, values);
+		if (id < 0)
+			throw new IOException("Could not insert expense into database");
+		
+		expense.id = (int)id;
+		
+		// TODO notify potential users of expense data that a new one is
+		// available
 	}
 
 	public void saveExpense(Account account, Currency currency, int amount,
 			Date date, byte[] jpegData) throws IOException
-			{
+	{
 		File imageFile = randomFile(storageDirectory(DataType.IMAGE), ".jpeg");
 		FileOutputStream image = new FileOutputStream(imageFile);
 
@@ -521,23 +570,97 @@ public final class CashLensStorage
 		image.close();
 
 		// Save expense to database
-		saveExpenseToDB(account, currency, amount, date, null, imageFile
-				.getAbsolutePath(), null);
-			}
+		Expense expense = new Expense();
+		expense.accountId = account.id;
+		expense.currencyId = currency.id;
+		expense.amount = amount;
+		expense.date = date;
+		expense.audioPath = null;
+		expense.description = null;
+		expense.imagePath = imageFile.getAbsolutePath();
+		saveExpenseToDB(expense);
+	}
 
+	public List<Expense> readExpenses(Date startDate, Date endDate, int[] accountIds)
+	{
+		ArrayList<Expense> expenses = new ArrayList<Expense>();
+		String cond = "";
+		
+		if (startDate != null)
+			cond = ExpensesTable.DATE + ">=" + dateToUTCInt(startDate);
+		
+		if (endDate != null)
+		{
+			if (cond.length() > 0)
+				cond += " AND ";
+			cond += ExpensesTable.DATE + "<" + dateToUTCInt(endDate);
+		}
+		
+		if (accountIds != null)
+		{
+			if (cond.length() > 0)
+				cond += " AND ";
+			
+			cond += "(";
+			for (int i=0; i<accountIds.length; ++i)
+			{
+				cond += ExpensesTable.ACCOUNT + "=" + Integer.toString(accountIds[i]);
+				if (i+1 < accountIds.length)
+					cond += " OR ";
+			}
+			cond += ")";
+		}
+		
+		Cursor cursor = db().query(ExpensesTable.TABLE_NAME, null, cond,
+				null, null, null, ExpensesTable.DATE);
+
+		int idIndex = cursor.getColumnIndex(ExpensesTable._ID);
+		int accountIdIndex = cursor.getColumnIndex(ExpensesTable.ACCOUNT);
+		int currencyIdIndex = cursor.getColumnIndex(ExpensesTable.CURRENCY);
+		int amountIndex = cursor.getColumnIndex(ExpensesTable.AMOUNT);
+		int dateIndex = cursor.getColumnIndex(ExpensesTable.DATE);;
+		int audioPathIndex = cursor.getColumnIndex(ExpensesTable.AUDIO_FILENAME);
+		int descriptionIndex = cursor.getColumnIndex(ExpensesTable.DESCRIPTION);
+		int imagePathIndex = cursor.getColumnIndex(ExpensesTable.IMAGE_FILENAME);
+
+		cursor.moveToFirst();
+		while (!cursor.isAfterLast())
+		{
+			Expense expense = new Expense();
+
+			expense.id = cursor.getInt(idIndex);
+			expense.accountId = cursor.getInt(accountIdIndex);
+			expense.currencyId = cursor.getInt(currencyIdIndex);
+			expense.amount = cursor.getInt(amountIndex);
+			expense.date = dateFromUTCInt(cursor.getLong(dateIndex));
+			expense.audioPath = cursor.getString(audioPathIndex);
+			expense.description = cursor.getString(descriptionIndex);
+			expense.imagePath = cursor.getString(imagePathIndex);
+
+			expenses.add(expense);
+
+			cursor.moveToNext();
+		}
+
+		cursor.close();
+
+		return expenses;
+	}
+	
 	public void addAccount(Account account) throws IOException
 	{
 		ContentValues values = new ContentValues();
 		values.put(AccountsTable.NAME, account.name);
 
-		long id = (int)db().insert(AccountsTable.TABLE_NAME, null, values);
+		long id = (int) db().insert(AccountsTable.TABLE_NAME, null, values);
 
 		if (id < 0)
 			throw new IOException(mContext.getString(R.string.cant_insert));
 
-		account.id = (int)id;
+		account.id = (int) id;
 
-		Log.w("addAccount", "New account: " + account.name + ", ID " + Integer.toString(account.id));
+		Log.w("addAccount", "New account: " + account.name + ", ID "
+				+ Integer.toString(account.id));
 
 		// Also add to accounts list
 		mAccounts.add(account);
@@ -549,12 +672,16 @@ public final class CashLensStorage
 		ContentValues values = new ContentValues();
 		values.put(AccountsTable.NAME, account.name);
 
-		int affected = db().delete(AccountsTable.TABLE_NAME, AccountsTable._ID + "=?", new String[] { Integer.toString(account.id) });
+		int affected = db().delete(AccountsTable.TABLE_NAME,
+				AccountsTable._ID + "=?", new String[]
+				{ Integer.toString(account.id) });
 
 		if (affected != 1)
-			throw new IOException("Deleted " + Integer.toString(affected) + " items instead of 1 from " + AccountsTable.TABLE_NAME);
+			throw new IOException("Deleted " + Integer.toString(affected)
+					+ " items instead of 1 from " + AccountsTable.TABLE_NAME);
 
-		Log.w("addAccount", "Deleted account: " + account.name + ", ID " + Integer.toString(account.id));
+		Log.w("addAccount", "Deleted account: " + account.name + ", ID "
+				+ Integer.toString(account.id));
 
 		// Also remove from accounts list
 		mAccounts.remove(account);
