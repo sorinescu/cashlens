@@ -11,7 +11,8 @@ import android.widget.Button;
 
 public class CashLensActivity extends Activity
 {
-	private Button addExpenseBtn;
+	private Button mAddExpenseBtn;
+	private ExpensesView mExpenses; 
 
 	/** Called when the activity is first created. */
 	@Override
@@ -20,9 +21,10 @@ public class CashLensActivity extends Activity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 
-		addExpenseBtn = (Button)findViewById(R.id.addExpense);
+		mAddExpenseBtn = (Button)findViewById(R.id.addExpense);
+		mExpenses = (ExpensesView)findViewById(R.id.expensesLst);
 
-		addExpenseBtn.setOnClickListener(new Button.OnClickListener()
+		mAddExpenseBtn.setOnClickListener(new Button.OnClickListener()
 		{
 			public void onClick(View v)
 			{
@@ -31,6 +33,8 @@ public class CashLensActivity extends Activity
 				startActivity(myIntent);
 			}
 		});
+		
+		mExpenses.setFilter(null, null, null);
 	}
 
 	/*
