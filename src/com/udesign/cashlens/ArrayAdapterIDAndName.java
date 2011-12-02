@@ -41,6 +41,19 @@ public class ArrayAdapterIDAndName<T extends ArrayAdapterIDAndName.IDAndName> ex
 		return mItems.size();
 	}
 
+	public int getItemPositionById(int id)
+	{
+		int pos = 0;
+		for (T item : mItems)
+		{
+			if (item.id == id)
+				return pos;
+			++pos;
+		}
+		
+		return -1;	// not found
+	}
+	
 	public Object getItem(int position) 
 	{
 		return mItems.get(position);
