@@ -23,6 +23,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.RelativeLayout;
@@ -104,11 +105,22 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		mAccountSpinner = (Spinner)findViewById(R.id.spinAccount);
 		mCurrencySpinner = (Spinner)findViewById(R.id.spinCurrency);
 		
+		AppSettings settings = AppSettings.instance(this);
+		int position;
+		
 		mAccountsAdapter = mStorage.accountsAdapter(this);
 	    mAccountSpinner.setAdapter(mAccountsAdapter);
 	    
+	    // automatically select last used account
+	    position = mAccountsAdapter.getItemPositionById(settings.getLastUsedAccount());
+	    mAccountSpinner.setSelection(position);
+	    
 		mCurrenciesAdapter = mStorage.currenciesAdapter(this);
 	    mCurrencySpinner.setAdapter(mCurrenciesAdapter);
+
+	    // automatically select last used currency
+	    position = mCurrenciesAdapter.getItemPositionById(settings.getLastUsedCurrency());
+	    mCurrencySpinner.setSelection(position);
 	    
 	    SurfaceHolder holder = mCameraPreview.getHolder();
 		holder.addCallback(this);
@@ -314,6 +326,18 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	        mCamera.release();
 	        mCamera = null;
         }
+        
+        // save last used currency and account
+        AppSettings settings = AppSettings.instance(this);
+        long id;
+        
+        id = mAccountSpinner.getSelectedItemId();
+        if (id != AdapterView.INVALID_ROW_ID)
+        	settings.setLastUsedAccount((int)id);
+        
+        id = mCurrencySpinner.getSelectedItemId();
+        if (id != AdapterView.INVALID_ROW_ID)
+        	settings.setLastUsedCurrency((int)id);
 	}
 
 	public void onAutoFocus(boolean success, Camera camera) 
