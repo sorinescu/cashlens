@@ -1,0 +1,16 @@
+CashLens is an Android 2.1+ application that allows you to track your expenses in a simple way, by taking pictures of items you bought.
+
+Some features:
+* add expense by specifying the amount, account and currency and taking a picture of an item (bought object, receipt, bill etc)
+* multiple expense accounts
+* multiple currencies - with selectable "main currency" per account (useful for credit cards, where transactions are made in the card's currency)
+* filter expenses by start/end date, account, currency
+* predefined filters: this day, current week, current month
+* custom start of month for each account (e.g. for credit cards); when a single account is selected, the "current month" filter will show expenses starting from the account's configured start of month
+
+Future plans:
+* automatic currency exchange rate
+* "audio expenses" (record an audio message instead of / in addition to taking a picture)
+* recurring payments (with calendar integration)
+* Excel/Google Docs export
+* automatic text recognition (bills, receipts)
