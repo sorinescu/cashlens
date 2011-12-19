@@ -38,7 +38,7 @@ public final class CashLensStorage
 	private static CashLensStorage mInstance;
 
 	private static final String DATABASE_NAME = "cashlens.db";
-	private static final int DATABASE_VERSION = 1;
+	private static final int DATABASE_VERSION = 2;
 
 	private ArrayListWithNotify<Account> mAccounts;
 	private ArrayListWithNotify<Currency> mCurrencies;
@@ -75,14 +75,6 @@ public final class CashLensStorage
 			db.execSQL("CREATE TABLE " + TABLE_NAME + " (" + AccountsTable._ID
 					+ " INTEGER PRIMARY KEY," + AccountsTable.NAME + " TEXT"
 					+ ");");
-
-			// TODO use dynamic data
-			ContentValues accountTest1 = new ContentValues();
-			accountTest1.put(NAME, "Cashhh");
-			db.insert(TABLE_NAME, null, accountTest1);
-			ContentValues accountTest2 = new ContentValues();
-			accountTest2.put(NAME, "Visa");
-			db.insert(TABLE_NAME, null, accountTest2);
 		}
 
 		public static void onUpgrade(SQLiteDatabase db, int oldVersion,
@@ -161,6 +153,7 @@ public final class CashLensStorage
 		int accountId;
 		int amount;	// fixed point
 		int currencyId;
+		int thumbnailId;
 		String description;
 		String imagePath;
 		String audioPath;
@@ -233,6 +226,14 @@ public final class CashLensStorage
 		public static final String IMAGE_FILENAME = "image_fname";
 
 		/**
+		 * The id of the image thumbnail (optional).
+		 * <P>
+		 * Type: INTEGER FOREIGN KEY
+		 * </P>
+		 */
+		public static final String IMAGE_THUMBNAIL = "image_thumb";
+
+		/**
 		 * The file name of the audio of the expense (optional).
 		 * <P>
 		 * Type: TEXT
@@ -250,13 +251,17 @@ public final class CashLensStorage
 					+ ExpensesTable.DATE + " INTEGER NOT NULL," 
 					+ ExpensesTable.DESCRIPTION + " TEXT,"
 					+ ExpensesTable.IMAGE_FILENAME + " TEXT,"
+					+ ExpensesTable.IMAGE_THUMBNAIL + " INTEGER,"
 					+ ExpensesTable.AUDIO_FILENAME + " TEXT," 
 					+ "FOREIGN KEY ("
 						+ ExpensesTable.ACCOUNT + ") REFERENCES "
 						+ AccountsTable.TABLE_NAME + "(" + AccountsTable._ID + "),"
 					+ "FOREIGN KEY (" 
-						+ ExpensesTable.CURRENCY+ ") REFERENCES " 
+						+ ExpensesTable.CURRENCY + ") REFERENCES " 
 						+ CurrenciesTable.TABLE_NAME + "(" + CurrenciesTable._ID + ")" 
+					+ "FOREIGN KEY (" 
+						+ ExpensesTable.IMAGE_THUMBNAIL + ") REFERENCES " 
+						+ ExpenseThumbnailsTable.TABLE_NAME + "(" + ExpenseThumbnailsTable._ID + ")" 
 					+ ");");
 		}
 
@@ -268,6 +273,46 @@ public final class CashLensStorage
 					"Upgrading database from version " + oldVersion + " to "
 							+ newVersion + ", which will destroy all old data");
 			db.execSQL("DROP TABLE IF EXISTS " + ExpensesTable.TABLE_NAME);
+			onCreate(db);
+		}
+	}
+
+	/**
+	 * Expense thumbnail DB table structure.
+	 */
+	private static class ExpenseThumbnailsTable implements BaseColumns
+	{
+		public static final String TABLE_NAME = "expense_thumbs";
+
+		// This class cannot be instantiated
+		private ExpenseThumbnailsTable()
+		{
+		}
+
+		/**
+		 * The compressed (JPEG) thumbnail data.
+		 * <P>
+		 * Type: BLOB
+		 * </P>
+		 */
+		public static final String DATA = "data";
+
+		public static void onCreate(SQLiteDatabase db)
+		{
+			db.execSQL("CREATE TABLE " + TABLE_NAME + " (" 
+					+ ExpenseThumbnailsTable._ID + " INTEGER PRIMARY KEY," 
+					+ ExpenseThumbnailsTable.DATA + " BLOB"
+					+ ");");
+		}
+
+		public static void onUpgrade(SQLiteDatabase db, int oldVersion,
+				int newVersion)
+		{
+			// TODO this is not acceptable; upgrade DB
+			Log.w(ExpenseThumbnailsTable.class.getName(),
+					"Upgrading database from version " + oldVersion + " to "
+							+ newVersion + ", which will destroy all old data");
+			db.execSQL("DROP TABLE IF EXISTS " + ExpenseThumbnailsTable.TABLE_NAME);
 			onCreate(db);
 		}
 	}
@@ -285,6 +330,7 @@ public final class CashLensStorage
 			AccountsTable.onCreate(db);
 			CurrenciesTable.onCreate(db);
 			ExpensesTable.onCreate(db);
+			ExpenseThumbnailsTable.onCreate(db);
 		}
 
 		@Override
@@ -293,6 +339,7 @@ public final class CashLensStorage
 			AccountsTable.onUpgrade(db, oldVersion, newVersion);
 			CurrenciesTable.onUpgrade(db, oldVersion, newVersion);
 			ExpensesTable.onUpgrade(db, oldVersion, newVersion);
+			ExpenseThumbnailsTable.onUpgrade(db, oldVersion, newVersion);
 		}
 	}
 
@@ -300,8 +347,7 @@ public final class CashLensStorage
 			throws IOException
 	{
 		// use the global application context for the singleton, not the
-		// received context
-		// which may become unavailable
+		// received context, which may become unavailable
 		if (mInstance == null)
 			mInstance = new CashLensStorage(currentContext
 					.getApplicationContext());
@@ -568,7 +614,11 @@ public final class CashLensStorage
 		image.write(jpegData);
 		image.flush();
 		image.close();
-
+		
+		// Generate and save thumbnail
+		byte[] thumbData = ExpenseThumbnail.createFromJPEG(jpegData);
+		int thumbId = saveExpenseThumbnail(thumbData);
+		
 		// Save expense to database
 		Expense expense = new Expense();
 		expense.accountId = account.id;
@@ -578,6 +628,8 @@ public final class CashLensStorage
 		expense.audioPath = null;
 		expense.description = null;
 		expense.imagePath = imageFile.getAbsolutePath();
+		expense.thumbnailId = thumbId;
+		
 		saveExpenseToDB(expense);
 	}
 
@@ -622,6 +674,7 @@ public final class CashLensStorage
 		int audioPathIndex = cursor.getColumnIndex(ExpensesTable.AUDIO_FILENAME);
 		int descriptionIndex = cursor.getColumnIndex(ExpensesTable.DESCRIPTION);
 		int imagePathIndex = cursor.getColumnIndex(ExpensesTable.IMAGE_FILENAME);
+		int thumbIndex = cursor.getColumnIndex(ExpensesTable.IMAGE_THUMBNAIL);
 
 		cursor.moveToFirst();
 		while (!cursor.isAfterLast())
@@ -636,6 +689,7 @@ public final class CashLensStorage
 			expense.audioPath = cursor.getString(audioPathIndex);
 			expense.description = cursor.getString(descriptionIndex);
 			expense.imagePath = cursor.getString(imagePathIndex);
+			expense.thumbnailId = cursor.getInt(thumbIndex);
 
 			expenses.add(expense);
 
@@ -673,8 +727,7 @@ public final class CashLensStorage
 		values.put(AccountsTable.NAME, account.name);
 
 		int affected = db().delete(AccountsTable.TABLE_NAME,
-				AccountsTable._ID + "=?", new String[]
-				{ Integer.toString(account.id) });
+				AccountsTable._ID + "=" + Integer.toString(account.id), null);
 
 		if (affected != 1)
 			throw new IOException("Deleted " + Integer.toString(affected)
@@ -686,5 +739,35 @@ public final class CashLensStorage
 		// Also remove from accounts list
 		mAccounts.remove(account);
 		mAccounts.notifyDataChanged();
+	}
+	
+	protected int saveExpenseThumbnail(byte[] thumbData) throws IOException
+	{
+		ContentValues values = new ContentValues();
+		values.put(ExpenseThumbnailsTable.DATA, thumbData);
+
+		int id = (int) db().insert(ExpenseThumbnailsTable.TABLE_NAME, null, values);
+
+		if (id < 0)
+			throw new IOException(mContext.getString(R.string.cant_insert));
+
+		Log.w("saveExpenseThumbnail", "New thumbnail: ID " + Integer.toString(id));
+		
+		return id;
+	}
+
+	public void loadExpenseThumbnail(ExpenseThumbnail thumb) throws IOException
+	{
+		Cursor cursor = db().query(ExpenseThumbnailsTable.TABLE_NAME,
+				new String[] { ExpenseThumbnailsTable.DATA }, 
+				ExpenseThumbnailsTable._ID + "=" + Integer.toString(thumb.id),
+				null, null, null, null);
+
+		cursor.moveToFirst();
+		
+		thumb.createFromByteArray(cursor.getBlob(0));
+		Log.w("loadExpenseThumbnail", "Loaded thumbnail: ID " + Integer.toString(thumb.id));
+
+		cursor.close();
 	}
 }
