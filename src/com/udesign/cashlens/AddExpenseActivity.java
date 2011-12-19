@@ -50,7 +50,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	private boolean mInFocus = false;
 	private Handler mAutoFocusStarter;
 	private Runnable mAutoFocusTask;
-	private ImageButton mRecordButton;
+	//private ImageButton mRecordButton;
 	private CashLensStorage mStorage;
 	public String mExpenseInt;
 	public String mExpenseFrac;
@@ -100,7 +100,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		mDotButton = (Button)findViewById(R.id.btnDot);
 		
 		mSnapshotButton = (ImageButton)findViewById(R.id.btnShoot);
-		mRecordButton = (ImageButton)findViewById(R.id.btnRec);
+		//mRecordButton = (ImageButton)findViewById(R.id.btnRec);
 
 		mAccountSpinner = (Spinner)findViewById(R.id.spinAccount);
 		mCurrencySpinner = (Spinner)findViewById(R.id.spinCurrency);
