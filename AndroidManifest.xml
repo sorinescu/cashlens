@@ -33,6 +33,10 @@
             android:label="@string/manage_accounts"
             android:name=".AccountsActivity" >
         </activity>
-    </application>
+        <activity
+            android:label="@string/view_expense"
+            android:name=".ViewExpenseActivity" >
+        </activity>
+        </application>
 
 </manifest>
