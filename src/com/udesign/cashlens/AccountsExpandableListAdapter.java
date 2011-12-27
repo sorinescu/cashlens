@@ -39,7 +39,7 @@ public class AccountsExpandableListAdapter extends BaseExpandableListAdapter
 		
 		try
 		{
-			mStorage = CashLensStorage.instance(context);
+			mStorage = CashLensStorage.instance(context.getApplicationContext());
 		} 
 		catch (IOException e)
 		{

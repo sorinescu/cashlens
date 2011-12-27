@@ -9,9 +9,12 @@ import com.udesign.cashlens.CashLensStorage.Account;
 import com.udesign.cashlens.CashLensStorage.Currency;
 
 import android.app.Activity;
-import android.content.res.Configuration;
 import android.graphics.Color;
 import android.hardware.Camera;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.PictureCallback;
@@ -52,6 +55,8 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	private Runnable mAutoFocusTask;
 	//private ImageButton mRecordButton;
 	private CashLensStorage mStorage;
+	private SensorEventListener mOrientationListener;
+	private int mPictureRotation = 0;
 	public String mExpenseInt;
 	public String mExpenseFrac;
 	public boolean mExpenseDot = false;
@@ -67,7 +72,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		
 		try 
 		{
-			mStorage = CashLensStorage.instance(this);
+			mStorage = CashLensStorage.instance(getApplicationContext());
 		} catch (IOException e) 
 		{
 			e.printStackTrace();
@@ -170,14 +175,57 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 					parent.mShouldTakePicture = true;
 			}
 		});
+		
+		// register a screen orientation listener through the sensor manager
+		// because the orientation listener gives bogus values
+		
+		SensorManager sensors = (SensorManager)getSystemService(SENSOR_SERVICE);
+		
+		mOrientationListener = new SensorEventListener()
+		{
+			public void onSensorChanged(SensorEvent event)
+			{
+				/*
+				Log.d("OrientationChanged", "orientation is now [" 
+						+ Float.toString(event.values[0]) + ","
+						+ Float.toString(event.values[1]) + ","
+						+ Float.toString(event.values[2]) + "]");
+				*/
+				
+				float roll = event.values[2];
+				if (roll <= 45 && roll >= -45) {
+					//Log.d("OrientationChanged", "PORTRAIT");
+					mPictureRotation = 90;
+				} else if (roll > 45) {
+					//Log.d("OrientationChanged", "LANDSCAPE");
+					mPictureRotation = 0;
+				} else if (roll < -45) {
+					//Log.d("OrientationChanged", "REVERSE_LANDSCAPE");
+					mPictureRotation = 180;
+				}
+			}
+			
+			public void onAccuracyChanged(Sensor sensor, int accuracy)
+			{
+			}
+		};
+		
+		sensors.registerListener(mOrientationListener, sensors.getDefaultSensor(Sensor.TYPE_ORIENTATION),
+				SensorManager.SENSOR_DELAY_NORMAL);
 	}
 
 	public boolean dataValid()
 	{
-		if (getExpenseFixedPoint() != 0)
-			return true;
+		if (getExpenseFixedPoint() == 0)
+			return false;
 		
-		return false;
+		if (mAccountSpinner.getSelectedItemId() == AdapterView.INVALID_ROW_ID)
+			return false;
+		
+		if (mCurrencySpinner.getSelectedItemId() == AdapterView.INVALID_ROW_ID)
+			return false;
+		
+		return true;
 	}
 	
 	protected String getExpenseText()
@@ -249,7 +297,10 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	    {
 			Method downPolymorphic = mCamera.getClass().getMethod("setDisplayOrientation", new Class[] { int.class });
 	        if (downPolymorphic != null)
+	        {
+	        	Log.w("CameraOrientation", "setting angle " + Integer.toString(angle) + " via Android 2.2 interface");
 	            downPolymorphic.invoke(mCamera, new Object[] { angle });
+	        }
 	    }
 	    catch (Exception e1)
 	    {
@@ -268,20 +319,6 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
         // for 2.2+, use standard (working) method to put camera in portrait mode
         if (Integer.parseInt(Build.VERSION.SDK) >= 8)
             setCameraDisplayOrientation_2_2(90);
-        else
-        {
-        	// use 2.1 method (buggy, doesn't work on all devices)
-            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT)
-            {
-                parameters.set("orientation", "portrait");
-                parameters.set("rotation", 90);
-            }
-            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)
-            {
-                parameters.set("orientation", "landscape");
-                parameters.set("rotation", 90);
-            }
-        }        
 
         try
         {
@@ -289,7 +326,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
         }
         catch (Exception e)
         {
-        	// ignore
+        	e.printStackTrace();
         }
         
         mCamera.startPreview();
@@ -421,6 +458,23 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		if (mInFocus && mShouldTakePicture)
 		{
 			mShouldTakePicture = false;
+
+			Camera.Parameters parameters = mCamera.getParameters();
+			
+	        // set EXIF picture orientation based on device orientation
+	    	Log.w("CameraOrientation", "setting rotation " + Integer.toString(mPictureRotation) + 
+	    			" in portrait mode via Android 2.1 interface (buggy)");
+	        parameters.setRotation(mPictureRotation);
+	        
+	        try
+	        {
+	        	mCamera.setParameters(parameters);
+	        }
+	        catch (Exception e)
+	        {
+	        	e.printStackTrace();
+	        }
+	        
 			mCamera.takePicture(null, null, this);
 		}
 	}
@@ -442,7 +496,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 			mStorage.saveExpense(account, currency, getExpenseFixedPoint(), new Date(), data);
 			Toast.makeText(this, R.string.expense_added, Toast.LENGTH_SHORT).show();
 			
-			// End activity.
+			// End activity
 			finish();
 		} 
 		catch (IOException e) 
