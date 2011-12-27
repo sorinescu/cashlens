@@ -6,11 +6,9 @@ package com.udesign.cashlens;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.List;
 import java.util.Random;
 import java.util.TimeZone;
 
@@ -38,10 +36,11 @@ public final class CashLensStorage
 	private static CashLensStorage mInstance;
 
 	private static final String DATABASE_NAME = "cashlens.db";
-	private static final int DATABASE_VERSION = 2;
+	private static final int DATABASE_VERSION = 3;
 
 	private ArrayListWithNotify<Account> mAccounts;
 	private ArrayListWithNotify<Currency> mCurrencies;
+	private ArrayListWithNotify<Expense> mExpenses;
 
 	/**
 	 * Account data.
@@ -148,6 +147,8 @@ public final class CashLensStorage
 	 */
 	public static class Expense
 	{
+		private CashLensStorage mStorage;
+		
 		int id;
 		Date date;
 		int accountId;
@@ -158,10 +159,25 @@ public final class CashLensStorage
 		String imagePath;
 		String audioPath;
 		
+		public Expense(CashLensStorage storage)
+		{
+			super();
+			mStorage = storage;
+		}
+		
 		public String amountToString()
 		{
 			return Integer.toString(amount / 100) + "." + 
 				Integer.toString(amount % 100);
+		}
+		
+		public String currencyName()
+		{
+			Currency currency = mStorage.getCurrency(currencyId);
+			if (currency != null)
+				return currency.name;
+			
+			return "???";
 		}
 	}
 	
@@ -355,6 +371,26 @@ public final class CashLensStorage
 		return mInstance;
 	}
 
+	public Currency getCurrency(int currencyId)
+	{
+		for (Currency currency : mCurrencies)
+			if (currency.id == currencyId)
+				return currency;
+		
+		return null;
+	}
+
+	public Expense getExpense(int expenseId)
+	{
+		// TODO this function is limited to the expenses we 
+		// have read through the last readExpenses call; fix this ?
+		for (Expense expense : mExpenses)
+			if (expense.id == expenseId)
+				return expense;
+		
+		return null;
+	}
+
 	private CashLensStorage(Context context) throws IOException
 	{
 		mContext = context;
@@ -375,6 +411,8 @@ public final class CashLensStorage
 
 		mCurrencies = new ArrayListWithNotify<Currency>();
 		readCurrencies();
+		
+		mExpenses = new ArrayListWithNotify<Expense>();
 	}
 
 	public void close()
@@ -592,6 +630,7 @@ public final class CashLensStorage
 		values.put(ExpensesTable.DATE, dateToUTCInt(expense.date));
 		values.put(ExpensesTable.DESCRIPTION, expense.description);
 		values.put(ExpensesTable.IMAGE_FILENAME, expense.imagePath);
+		values.put(ExpensesTable.IMAGE_THUMBNAIL, expense.thumbnailId);
 		values.put(ExpensesTable.AUDIO_FILENAME, expense.audioPath);
 
 		long id = db().insert(ExpensesTable.TABLE_NAME, null, values);
@@ -616,11 +655,11 @@ public final class CashLensStorage
 		image.close();
 		
 		// Generate and save thumbnail
-		byte[] thumbData = ExpenseThumbnail.createFromJPEG(jpegData);
+		byte[] thumbData = ExpenseThumbnail.createFromJPEG(mContext, jpegData);
 		int thumbId = saveExpenseThumbnail(thumbData);
 		
 		// Save expense to database
-		Expense expense = new Expense();
+		Expense expense = new Expense(this);
 		expense.accountId = account.id;
 		expense.currencyId = currency.id;
 		expense.amount = amount;
@@ -633,9 +672,11 @@ public final class CashLensStorage
 		saveExpenseToDB(expense);
 	}
 
-	public List<Expense> readExpenses(Date startDate, Date endDate, int[] accountIds)
+	public ArrayListWithNotify<Expense> readExpenses(Date startDate, Date endDate, int[] accountIds)
 	{
-		ArrayList<Expense> expenses = new ArrayList<Expense>();
+		// cache the retrieved expenses locally
+		mExpenses = new ArrayListWithNotify<Expense>();
+		
 		String cond = "";
 		
 		if (startDate != null)
@@ -679,7 +720,7 @@ public final class CashLensStorage
 		cursor.moveToFirst();
 		while (!cursor.isAfterLast())
 		{
-			Expense expense = new Expense();
+			Expense expense = new Expense(this);
 
 			expense.id = cursor.getInt(idIndex);
 			expense.accountId = cursor.getInt(accountIdIndex);
@@ -691,14 +732,14 @@ public final class CashLensStorage
 			expense.imagePath = cursor.getString(imagePathIndex);
 			expense.thumbnailId = cursor.getInt(thumbIndex);
 
-			expenses.add(expense);
+			mExpenses.add(expense);
 
 			cursor.moveToNext();
 		}
 
 		cursor.close();
 
-		return expenses;
+		return mExpenses;
 	}
 	
 	public void addAccount(Account account) throws IOException
@@ -765,7 +806,7 @@ public final class CashLensStorage
 
 		cursor.moveToFirst();
 		
-		thumb.createFromByteArray(cursor.getBlob(0));
+		thumb.decodeFromByteArray(cursor.getBlob(0));
 		Log.w("loadExpenseThumbnail", "Loaded thumbnail: ID " + Integer.toString(thumb.id));
 
 		cursor.close();
