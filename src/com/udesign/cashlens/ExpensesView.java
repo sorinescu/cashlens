@@ -4,14 +4,13 @@
 package com.udesign.cashlens;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 import com.udesign.cashlens.CashLensStorage.Expense;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 /**
@@ -23,49 +22,42 @@ public class ExpensesView extends ListView
 	private Date mStartDate = null;
 	private Date mEndDate = null;
 	private int[] mAccountsFilter = null;
-	private List<Expense> mExpenses = null;
+	private ArrayList<Expense> mExpenses = null;
 	private CashLensStorage mStorage = null;
 	
 	/**
 	 * @param context
+	 * @throws IOException 
 	 */
-	public ExpensesView(Context context)
+	public ExpensesView(Context context) throws IOException
 		{
 			super(context);
-			initialize(context);
 		}
 
 	/**
 	 * @param context
 	 * @param attrs
+	 * @throws IOException 
 	 */
-	public ExpensesView(Context context, AttributeSet attrs)
+	public ExpensesView(Context context, AttributeSet attrs) throws IOException
 		{
 			super(context, attrs);
-			initialize(context);
 		}
 
 	/**
 	 * @param context
 	 * @param attrs
 	 * @param defStyle
+	 * @throws IOException 
 	 */
-	public ExpensesView(Context context, AttributeSet attrs, int defStyle)
+	public ExpensesView(Context context, AttributeSet attrs, int defStyle) throws IOException
 		{
 			super(context, attrs, defStyle);
-			initialize(context);
 		}
 	
-	protected void initialize(Context context)
+	public void initialize() throws IOException
 	{
-		try
-		{
-			mStorage = CashLensStorage.instance(context);
-		} 
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
+		mStorage = CashLensStorage.instance(getContext().getApplicationContext());
 	}
 
 	/**
@@ -101,8 +93,7 @@ public class ExpensesView extends ListView
 	{
 		mExpenses = mStorage.readExpenses(mStartDate, mEndDate, mAccountsFilter);
 		
-		ArrayAdapter<String> adapter = new ArrayAdapter<String>(getContext(), 
-				android.R.layout.simple_list_item_1, expensesToStrings());
+		ArrayAdapterExpense adapter = new ArrayAdapterExpense(getContext(), mExpenses);
 		setAdapter(adapter);
 	}
 }
