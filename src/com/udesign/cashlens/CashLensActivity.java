@@ -3,11 +3,15 @@ package com.udesign.cashlens;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.Toast;
+import android.widget.AdapterView.OnItemClickListener;
 
 public class CashLensActivity extends Activity
 {
@@ -23,6 +27,19 @@ public class CashLensActivity extends Activity
 
 		mAddExpenseBtn = (Button)findViewById(R.id.addExpense);
 		mExpenses = (ExpensesView)findViewById(R.id.expensesLst);
+		
+		// this can generate an IOException during the initialization of ExpensesView
+		// which is typically caused by a missing SD card
+		try
+		{
+			mExpenses.initialize();
+		}
+		catch (Exception e)
+		{
+			Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+			finish();	// exit app
+			return;
+		}
 
 		mAddExpenseBtn.setOnClickListener(new Button.OnClickListener()
 		{
@@ -30,6 +47,22 @@ public class CashLensActivity extends Activity
 			{
 				Intent myIntent = new Intent(CashLensActivity.this,
 						AddExpenseActivity.class);
+				startActivity(myIntent);
+			}
+		});
+		
+		mExpenses.setOnItemClickListener(new OnItemClickListener()
+		{
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id)
+			{
+				if (id == 0)
+					return;
+				
+				Log.d("ExpenseClicked", "selected expense with id " + Long.toString(id));
+				
+				Intent myIntent = new Intent(CashLensActivity.this,	ViewExpenseActivity.class);
+				myIntent.putExtra("expense_id", (int)id);
+				
 				startActivity(myIntent);
 			}
 		});
