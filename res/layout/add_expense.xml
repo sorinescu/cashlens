@@ -220,7 +220,8 @@
         android:layout_alignParentBottom="true"
         android:layout_toLeftOf="@+id/btnShoot"
         android:background="@drawable/rounded_translucent_button"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:visibility="invisible" />
     
     <ImageButton
         android:id="@+id/btnShoot"
