@@ -5,32 +5,68 @@ package com.udesign.cashlens;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 import android.content.Context;
+import android.os.AsyncTask;
 import android.util.Log;
 
 /**
  * @author sorin
  *
  */
-public class ExpenseThumbnailCache implements Runnable
+public class ExpenseThumbnailCache
 {
 	protected Context mContext;
-	protected Thread mRunner;
 	protected HashMap<Integer,ExpenseThumbnail> mThumbs = new HashMap<Integer, ExpenseThumbnail>();
-	protected LinkedList<ExpenseThumbnail> mThumbsToLoad = new LinkedList<ExpenseThumbnail>();
-	protected ReentrantLock mLoadMutex = new ReentrantLock();
-	protected Condition mNewThumbsToLoad = mLoadMutex.newCondition();
 	
 	protected static ExpenseThumbnailCache mCache = null;
+
+	protected class LoadThumbnailTask extends AsyncTask<ExpenseThumbnail,Void,ExpenseThumbnail>
+	{
+		@Override
+		protected ExpenseThumbnail doInBackground(ExpenseThumbnail... thumbs)
+		{
+			CashLensStorage storage;
+			
+			try
+			{
+				storage = CashLensStorage.instance(mContext.getApplicationContext());
+			} catch (IOException e)
+			{
+				e.printStackTrace();
+				return null;
+			}
+			
+			Log.d("LoadThumbnailTask", "running");
+		
+			ExpenseThumbnail thumb = thumbs[0];
+			try
+			{
+				storage.loadExpenseThumbnail(thumb);
+				Log.w("LoadThumbnailTask", "Loaded thumbnail with id " + Integer.toString(thumb.id));
+			} catch (IOException e)
+			{
+				e.printStackTrace();
+			}
+			
+			Log.d("LoadThumbnailTask", "exiting");
+			return thumb;
+		}
+
+		/* (non-Javadoc)
+		 * @see android.os.AsyncTask#onPostExecute(java.lang.Object)
+		 */
+		@Override
+		protected void onPostExecute(ExpenseThumbnail thumb)
+		{
+			// this will be executed on the UI thread
+			thumb.notifyOnLoadedListeners();
+		}
+	}
 	
 	protected ExpenseThumbnailCache(Context context)
 	{
 		mContext = context;
-		mRunner = new Thread(this);	// start loading thumbnails
 	}
 	
 	public static ExpenseThumbnailCache instance(Context context)
@@ -41,7 +77,7 @@ public class ExpenseThumbnailCache implements Runnable
 		return mCache;
 	}
 	
-	public synchronized ExpenseThumbnail getThumbnail(int id, ExpenseThumbnail.OnLoadedListener onLoadedListener,
+	public synchronized ExpenseThumbnail getThumbnail(int id, ExpenseThumbnail.OnExpenseThumbnailLoadedListener onLoadedListener,
 			Object onLoadedContext)
 	{
 		ExpenseThumbnail thumb = mThumbs.get(new Integer(id));
@@ -56,15 +92,18 @@ public class ExpenseThumbnailCache implements Runnable
 		thumb = new ExpenseThumbnail(mContext, id);
 	
 		if (onLoadedListener != null)
+		{
 			thumb.registerOnLoadedListener(onLoadedListener, onLoadedContext);
-		
-		// add thumb to load list
-		mLoadMutex.lock();
-		mThumbsToLoad.add(thumb);
-		mLoadMutex.unlock();
-		
+			Log.d("ThumbCache", "thumb id " + Integer.toString(thumb.id) + " has new load listener " + onLoadedListener.toString());
+		}
+
+		LoadThumbnailTask task = new LoadThumbnailTask();
+		task.execute(thumb);
+		Log.d("ThumbCache", "added thumb id " + Integer.toString(thumb.id) + " to load list");
+
 		// cache the thumbnail
 		mThumbs.put(new Integer(id), thumb);
+		Log.d("ThumbCache", "cached thumb id " + Integer.toString(thumb.id));
 		
 		return thumb;
 	}
@@ -72,44 +111,5 @@ public class ExpenseThumbnailCache implements Runnable
 	public synchronized void releaseThumbnail(ExpenseThumbnail thumb)
 	{
 		// TODO should mark thumb as "not used", so it can be freed on OOM
-	}
-
-	public void run()
-	{
-		CashLensStorage storage;
-		
-		try
-		{
-			storage = CashLensStorage.instance(mContext);
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-			return;
-		}
-		
-		// extract thumbnails to load from list, one by one, load them
-		// and notify listeners
-		mLoadMutex.lock();
-		while (mThumbsToLoad.isEmpty())
-			try
-			{
-				mNewThumbsToLoad.await();
-			} catch (InterruptedException e)
-			{
-				e.printStackTrace();
-				return;
-			}
-		
-		ExpenseThumbnail thumb = mThumbsToLoad.remove();
-		try
-		{
-			storage.loadExpenseThumbnail(thumb);
-			Log.w("ThumbCache.run", "Loaded thumbnail with id " + Integer.toString(thumb.id));
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-		
-		mLoadMutex.unlock();
 	}
 }
