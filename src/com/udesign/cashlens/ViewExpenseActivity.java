@@ -10,8 +10,6 @@ import com.udesign.cashlens.CashLensStorage.Expense;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
-import android.media.ExifInterface;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
@@ -75,54 +73,8 @@ public class ViewExpenseActivity extends Activity
 						", height " + Integer.toString(mImage.getHeight()));
 			}
 			else
-			{
-				mImage = BitmapFactory.decodeFile(mExpense.imagePath);
-
-				// Rotate the image if necessary; all images are shot in LANDSCAPE mode
-				try
-				{
-					ExifInterface exif = new ExifInterface(mExpense.imagePath);
-					
-					int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
-					Log.d("ExpenseImage", "image has orientation " + Integer.toString(orientation) + ", width " + 
-							Integer.toString(mImage.getWidth()) + ", height " + Integer.toString(mImage.getHeight()));
-					
-					Matrix matrix = new Matrix();
-	
-					// From http://sylvana.net/jpegcrop/exif_orientation.html
-					// For convenience, here is what the letter F would look like if it were tagged correctly 
-					// and displayed by a program that ignores the orientation tag (thus showing the stored image):
-					//   (1)       2      (3)      4         5          (6)          7         (8)
-					//
-					//	888888  888888      88  88      8888888888  88                  88  8888888888
-					//	88          88      88  88      88  88      88  88          88  88      88  88
-					//	8888      8888    8888  8888    88          8888888888  8888888888          88
-					//	88          88      88  88
-					//	88          88  888888  888888
-	
-					if (orientation == 3)
-						matrix.postRotate(180);
-					else if (orientation == 6)
-						matrix.postRotate(90);
-					else if (orientation == 8)
-						matrix.postRotate(-90);
-					
-					if (orientation != 1)
-					{
-						// Create a new image with the correct (maybe rotated) width/height
-						Bitmap newImage = Bitmap.createBitmap(mImage, 0, 0, mImage.getWidth(), mImage.getHeight(), matrix, true);
-						
-						Log.d("ExpenseImage", "created a new image with width " + Integer.toString(newImage.getWidth()) + 
-								", height " + Integer.toString(newImage.getHeight()));
-			
-						// Replace original image and release it
-						mImage = newImage;
-					}
-				} catch (IOException e)
-				{
-					e.printStackTrace();
-				}
-			}
+				mImage = CashLensUtils.createCorrectlyRotatedBitmapIfNeeded(BitmapFactory.decodeFile(mExpense.imagePath),
+								mExpense.imagePath, 1.0f);
 			
 			mImageView.setImageBitmap(mImage);
 		}
