@@ -15,7 +15,6 @@ import android.media.ExifInterface;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,8 +26,9 @@ public class ViewExpenseActivity extends Activity
 {
 	protected CashLensStorage mStorage = null;
 	protected Expense mExpense = null;
-	protected ImageView mImage;
+	protected TouchImageView mImageView;
 	protected TextView mText;
+	protected Bitmap mImage = null;
 	
 	/* (non-Javadoc)
 	 * @see android.app.Activity#onCreate(android.os.Bundle)
@@ -60,40 +60,71 @@ public class ViewExpenseActivity extends Activity
 		mExpense = mStorage.getExpense(expenseId);
 		Log.d("ViewExpense.onCreate", "viewing expense with id " + Integer.toString(expenseId) + ", resolved to " + mExpense.toString());
 		
-		mImage = (ImageView)findViewById(android.R.id.background);
+		mImageView = (TouchImageView)findViewById(android.R.id.background);
 		mText = (TextView)findViewById(android.R.id.text1);
 		
 		if (mExpense.imagePath != null)
 		{
-			Bitmap image = BitmapFactory.decodeFile(mExpense.imagePath);
+			// Reuse the already decoded image (onCreate is called again after a configuration change) 
+			Object data = getLastNonConfigurationInstance(); 
 
-			// rotate the image if necessary
-			try
+			if (data != null)
 			{
-				ExifInterface exif = new ExifInterface(mExpense.imagePath);
-				
-				int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
-				Log.w("ExpenseImage", "image has orientation " + Integer.toString(orientation) + ", width " + 
-						Integer.toString(image.getWidth()) + ", height " + Integer.toString(image.getHeight()));
-				
-				if (orientation != 1)
+				mImage = (Bitmap)data;
+				Log.d("ExpenseImage", "reusing saved image: width " + Integer.toString(mImage.getWidth()) + 
+						", height " + Integer.toString(mImage.getHeight()));
+			}
+			else
+			{
+				mImage = BitmapFactory.decodeFile(mExpense.imagePath);
+
+				// Rotate the image if necessary; all images are shot in LANDSCAPE mode
+				try
 				{
-					Matrix matrix = new Matrix();
+					ExifInterface exif = new ExifInterface(mExpense.imagePath);
 					
+					int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
+					Log.d("ExpenseImage", "image has orientation " + Integer.toString(orientation) + ", width " + 
+							Integer.toString(mImage.getWidth()) + ", height " + Integer.toString(mImage.getHeight()));
+					
+					Matrix matrix = new Matrix();
+	
+					// From http://sylvana.net/jpegcrop/exif_orientation.html
+					// For convenience, here is what the letter F would look like if it were tagged correctly 
+					// and displayed by a program that ignores the orientation tag (thus showing the stored image):
+					//   (1)       2      (3)      4         5          (6)          7         (8)
+					//
+					//	888888  888888      88  88      8888888888  88                  88  8888888888
+					//	88          88      88  88      88  88      88  88          88  88      88  88
+					//	8888      8888    8888  8888    88          8888888888  8888888888          88
+					//	88          88      88  88
+					//	88          88  888888  888888
+	
 					if (orientation == 3)
 						matrix.postRotate(180);
 					else if (orientation == 6)
 						matrix.postRotate(90);
 					else if (orientation == 8)
 						matrix.postRotate(-90);
-					image = Bitmap.createBitmap(image, 0, 0, image.getWidth(), image.getHeight(), matrix, true);
+					
+					if (orientation != 1)
+					{
+						// Create a new image with the correct (maybe rotated) width/height
+						Bitmap newImage = Bitmap.createBitmap(mImage, 0, 0, mImage.getWidth(), mImage.getHeight(), matrix, true);
+						
+						Log.d("ExpenseImage", "created a new image with width " + Integer.toString(newImage.getWidth()) + 
+								", height " + Integer.toString(newImage.getHeight()));
+			
+						// Replace original image and release it
+						mImage = newImage;
+					}
+				} catch (IOException e)
+				{
+					e.printStackTrace();
 				}
-			} catch (IOException e)
-			{
-				e.printStackTrace();
 			}
 			
-			mImage.setImageBitmap(image);
+			mImageView.setImageBitmap(mImage);
 		}
 		
 		String html = "<b>" + mExpense.date.toLocaleString() + "</b>" +  "<br />";
@@ -104,6 +135,29 @@ public class ViewExpenseActivity extends Activity
         
         // formatted text
 		mText.setText(Html.fromHtml(html));
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onDestroy()
+	 */
+	@Override
+	protected void onDestroy()
+	{
+		// Try to free memory by releasing objects manually
+		mImageView.getDrawable().setCallback(null);
+		mImageView.setImageDrawable(null);
+		
+		super.onDestroy();
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onRetainNonConfigurationInstance()
+	 * @see http://android-developers.blogspot.com/2009/02/faster-screen-orientation-change.html
+	 */
+	@Override
+	public Object onRetainNonConfigurationInstance()
+	{
+		return mImage;
 	}
 
 }
