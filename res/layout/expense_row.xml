@@ -9,6 +9,7 @@
         android:layout_height="fill_parent"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
+        android:padding="0dp"
         android:src="@drawable/camera" />
 
     <com.udesign.cashlens.OutlineTextView
