@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
+import android.util.Log;
+
 /**
  * @author sorin
  *
@@ -25,17 +27,22 @@ public class ArrayListWithNotify<T> extends ArrayList<T>
 		mAutoNotify = autoNotify;
 	}
 	
-	public void notifyDataChanged() {
+	public synchronized void notifyDataChanged() {
 		for (OnDataChangedListener listener : mDataChangedListeners)
+		{
+			Log.d(this.getClass().toString(), "notifying data changed - listener " + listener.toString());
 			listener.onDataChanged();
+		}
 	}
 	
-	public void addOnDataChangedListener(OnDataChangedListener listener) {
+	public synchronized void addOnDataChangedListener(OnDataChangedListener listener) {
 		mDataChangedListeners.add(listener);
+		Log.d(this.getClass().getSimpleName(), "added on data changed listener " + listener.toString());
 	}
 	
-	public void removeOnDataChangedListener(OnDataChangedListener listener) {
+	public synchronized void removeOnDataChangedListener(OnDataChangedListener listener) {
 		mDataChangedListeners.remove(listener);
+		Log.d(this.getClass().getSimpleName(), "removed on data changed listener " + listener.toString());
 	}
 	
 	private void autoNotifyIfNeeded() {
