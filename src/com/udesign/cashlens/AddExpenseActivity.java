@@ -114,6 +114,12 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		int position;
 		
 		mAccountsAdapter = mStorage.accountsAdapter(this);
+		if (mAccountsAdapter.isEmpty())
+		{
+			Toast.makeText(this, R.string.no_accounts_defined, Toast.LENGTH_LONG).show();
+			finish();
+		}
+		
 	    mAccountSpinner.setAdapter(mAccountsAdapter);
 	    
 	    // automatically select last used account
@@ -121,7 +127,13 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	    mAccountSpinner.setSelection(position);
 	    
 		mCurrenciesAdapter = mStorage.currenciesAdapter(this);
-	    mCurrencySpinner.setAdapter(mCurrenciesAdapter);
+		if (mCurrenciesAdapter.isEmpty())
+		{
+			Toast.makeText(this, R.string.no_currencies_defined, Toast.LENGTH_LONG).show();
+			finish();
+		}
+
+		mCurrencySpinner.setAdapter(mCurrenciesAdapter);
 
 	    // automatically select last used currency
 	    position = mCurrenciesAdapter.getItemPositionById(settings.getLastUsedCurrency());
