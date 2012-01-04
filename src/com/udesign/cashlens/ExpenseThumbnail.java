@@ -15,7 +15,6 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.WindowManager;
 
 /**
  * @author sorin
@@ -24,10 +23,17 @@ import android.view.WindowManager;
 public class ExpenseThumbnail
 {
 	protected Context mContext;
-	protected Bitmap mBitmap = null;
+	protected Bitmap mBitmapPortrait = null;
+	protected Bitmap mBitmapLandscape = null;
 	protected ArrayList<OnLoadedListenerCallback> mOnLoadedListeners = new ArrayList<OnLoadedListenerCallback>();
 	
 	public int id;
+	
+	public static class Data
+	{
+		byte[] portraitData = null;
+		byte[] landscapeData = null;
+	}
 	
 	public ExpenseThumbnail(Context context, int id)
 	{
@@ -51,13 +57,16 @@ public class ExpenseThumbnail
 		Object context;
 	}
 	
-	public void decodeFromByteArray(byte[] data) throws IOException
+	public void decodeFromByteArray(byte[] data, boolean forPortrait) throws IOException
 	{
 		Bitmap thumb = BitmapFactory.decodeByteArray(data, 0, data.length);
 		if (thumb == null)
 			throw new IOException("Couldn't decode thumbnail");
 		
-		mBitmap = thumb;
+		if (forPortrait)
+			mBitmapPortrait = thumb;
+		else
+			mBitmapLandscape = thumb;
 	}
 	
 	public synchronized void registerOnLoadedListener(OnExpenseThumbnailLoadedListener listener, Object context)
@@ -87,54 +96,101 @@ public class ExpenseThumbnail
 		}
 	}
 
-	public Bitmap asBitmap() throws IOException
+	public Bitmap asBitmap(boolean forPortrait) throws IOException
 	{
 		createBitmapIfNeeded();
-		return mBitmap;
+		return (forPortrait || mBitmapLandscape == null) ? mBitmapPortrait : mBitmapLandscape;
 	}
 	
-	public static byte[] createFromJPEG(Context context, byte[] jpegData) throws IOException
+	public static Data createFromJPEG(Context context, byte[] jpegData, String jpegPath) throws IOException
 	{
-		Bitmap jpeg = BitmapFactory.decodeByteArray(jpegData, 0, jpegData.length);
-		if (jpeg == null)
+		Bitmap origJpeg = BitmapFactory.decodeByteArray(jpegData, 0, jpegData.length);
+		if (origJpeg == null)
 			throw new IOException("Couldn't decode JPEG");
 		
 		DisplayMetrics metrics = new DisplayMetrics();
-		((WindowManager)context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(metrics);
+		CashLensUtils.getDefaultDisplay(context).getMetrics(metrics);
+		
+		int screenWidth = metrics.widthPixels;
+		int screenHeight = metrics.heightPixels;
+		
+		// If we need to rotate the bitmap, do it at a smaller size to speed things up
+		float scale = (float)Math.max(screenWidth, screenHeight) / Math.min(origJpeg.getWidth(), origJpeg.getHeight());
+		Log.d("ExpenseThumbnail", "generating thumbnail from JPEG with scale " + Float.toString(scale));
+		
+		Bitmap jpeg = CashLensUtils.createCorrectlyRotatedBitmapIfNeeded(origJpeg, jpegPath, scale);
+		
+		Data thumbData = new Data();
 
-		int width = Math.max(metrics.widthPixels, metrics.heightPixels);
-		int height = Math.min(metrics.widthPixels, metrics.heightPixels) / 10;
+		// First generate portrait thumbnail, then landscape thumbnail
+		for (int i=0; i<2; ++i)
+		{
+			boolean forPortrait = (i == 0);
+			
+			int width;
+			int height;
+	
+			if (forPortrait)
+			{
+				height = Math.max(screenWidth, screenHeight);
+				width = Math.min(screenWidth, screenHeight);
+			}
+			else
+			{
+				width = Math.max(screenWidth, screenHeight);
+				height = Math.min(screenWidth, screenHeight);
+	
+				// For devices with square screens, only generate portrait thumbnail 
+				if (width == height)
+					break;
+			}
+	
+			// Fit 10 vertical thumbnails per screen
+			height /= 10;
+			
+			// scale thumbnail
+			Log.d("ExpenseThumbnail", "creating a thumbnail with width " + Integer.toString(width) + 
+					", height " + Integer.toString(height));
+	
+			Bitmap thumb = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+			Canvas canvas = new Canvas(thumb);
+			
+			scale = Math.min(jpeg.getWidth() / width, jpeg.getHeight() / height);
+			float srcWidth = (int)(scale * width);
+			float srcHeight = (int)(scale * height);
+	
+			Rect srcRect = new Rect();
+			srcRect.top = (int)((jpeg.getHeight() - srcHeight) / 2); 
+			srcRect.bottom = (int)(srcRect.top + srcHeight);
+			srcRect.left = (int)((jpeg.getWidth() - srcWidth) / 2);
+			srcRect.right = (int)(srcRect.left + srcWidth);
+			
+			// copy the central part of the JPEG; that's where the focus should be
+			Log.d("ExpenseThumbnail", "copying thumbnail from " + Integer.toString(srcRect.left) + 
+					"," + Integer.toString(srcRect.top) + " (" + Integer.toString(srcRect.width()) +
+					"x" + Integer.toString(srcRect.height()) + ")");
+			
+			canvas.drawBitmap(jpeg, srcRect, new Rect(0, 0, width, height), null);
+			
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			thumb.compress(Bitmap.CompressFormat.JPEG, 50, out);
+			
+			if (forPortrait)
+				thumbData.portraitData = out.toByteArray();
+			else
+				thumbData.landscapeData = out.toByteArray();
+		}
 		
-		// scale thumbnail
-		Bitmap thumb = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-		Canvas canvas = new Canvas(thumb);
-		
-		float scale = Math.min(jpeg.getWidth() / width, jpeg.getHeight() / height);
-		int realWidth = (int)(jpeg.getWidth() - scale * width);
-		int realHeight = (int)(jpeg.getHeight() - scale * height);
-
-		Rect srcRect = new Rect();
-		srcRect.top = realHeight / 2; 
-		srcRect.bottom = srcRect.top + realHeight;
-		srcRect.left = realWidth / 2;
-		srcRect.right = srcRect.left + realWidth;
-		
-		// copy the central part of the JPEG; that's where the focus should be
-		canvas.drawBitmap(jpeg, srcRect, new Rect(0, 0, width, height), null);
-		
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		thumb.compress(Bitmap.CompressFormat.JPEG, 50, out);
-		
-		return out.toByteArray();
+		return thumbData;
 	}
 
 	protected void createBitmapIfNeeded() throws IOException
 	{
-		if (mBitmap != null)
+		if (mBitmapPortrait != null)
 			return;
 		
-		mBitmap = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.camera);
-		if (mBitmap == null)
+		mBitmapPortrait = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.camera);
+		if (mBitmapPortrait == null)
 			throw new IOException("Couldn't load default thumbnail");
 	}
 }
