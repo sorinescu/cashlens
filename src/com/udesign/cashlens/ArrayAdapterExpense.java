@@ -4,11 +4,11 @@
 package com.udesign.cashlens;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 import com.udesign.cashlens.CashLensStorage.Expense;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -23,19 +23,25 @@ import android.widget.TextView;
  * @author sorin
  *
  */
-public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail.OnExpenseThumbnailLoadedListener
+public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail.OnExpenseThumbnailLoadedListener,
+	ArrayListWithNotify.OnDataChangedListener
 {
 	protected ExpenseThumbnailCache mThumbCache;
-	protected ArrayList<Expense> mItems;
+	protected ArrayListWithNotify<Expense> mItems;
 	protected Context mContext;
 	protected LayoutInflater mInflater;
+	protected int mOrientation;
 	
-	public ArrayAdapterExpense(Context context, ArrayList<Expense> items)
+	public ArrayAdapterExpense(Context context, ArrayListWithNotify<Expense> items)
 	{
+		mOrientation = CashLensUtils.getScreenOrientation(context);
+		
 		mItems = items;
 		mContext = context;
 		mInflater = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		mThumbCache = ExpenseThumbnailCache.instance(context.getApplicationContext());
+		
+		mItems.addOnDataChangedListener(this);
 	}
 
 	/* (non-Javadoc)
@@ -100,7 +106,7 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 			
 			try
 			{
-				image.setImageBitmap(thumb.asBitmap());
+				image.setImageBitmap(thumb.asBitmap(mOrientation != Configuration.ORIENTATION_LANDSCAPE));
 			} catch (IOException e)
 			{
 				e.printStackTrace();
@@ -118,10 +124,15 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 		
 		try
 		{
-			image.setImageBitmap(thumb.asBitmap());
+			image.setImageBitmap(thumb.asBitmap(mOrientation != Configuration.ORIENTATION_LANDSCAPE));
 		} catch (IOException e)
 		{
 			e.printStackTrace();
 		}
+	}
+
+	public void onDataChanged()
+	{
+		notifyDataSetChanged();
 	}
 }
