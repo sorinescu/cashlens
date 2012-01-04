@@ -496,6 +496,24 @@ public final class CashLensStorage
 		IMAGE, SOUND, ROOT
 	}
 
+	public String storageDirectoryPath(DataType dataType)
+	{
+		String dir = Environment.getExternalStorageDirectory().getAbsolutePath();
+		
+		dir += "/Android/data/" + mContext.getPackageName() + "/files/";
+		Log.i("ExpenseStorage", "App storage dir is '" + dir + "'");
+
+		switch (dataType)
+		{
+		case IMAGE:
+			return dir + "images/";
+		case SOUND:
+			return dir + "audio/";
+		default:
+			return dir;
+		}
+	}
+	
 	protected File storageDirectory(DataType dataType) throws IOException
 	{
 		if (dataType == DataType.IMAGE && mImageStorageDir != null)
@@ -503,29 +521,26 @@ public final class CashLensStorage
 		else if (dataType == DataType.SOUND && mSoundStorageDir != null)
 			return mSoundStorageDir;
 
-		String dir = Environment.getExternalStorageDirectory()
-				.getAbsolutePath();
-		dir += "/Android/data/" + mContext.getPackageName() + "/files/";
-		Log.i("ExpenseStorage", "App storage dir is '" + dir + "'");
-
+		String path = storageDirectoryPath(dataType);
+		
 		switch (dataType)
 		{
 		case IMAGE:
-			mImageStorageDir = new File(dir + "images/");
+			mImageStorageDir = new File(path);
 			if (!mImageStorageDir.exists() && !mImageStorageDir.mkdirs())
 				throw new IOException(mContext
 						.getString(R.string.cant_create_dir)
 						+ mImageStorageDir.getAbsolutePath());
 			return mImageStorageDir;
 		case SOUND:
-			mSoundStorageDir = new File(dir + "audio");
+			mSoundStorageDir = new File(path);
 			if (!mSoundStorageDir.exists() && !mSoundStorageDir.mkdirs())
 				throw new IOException(mContext
 						.getString(R.string.cant_create_dir)
 						+ mSoundStorageDir.getAbsolutePath());
 			return mSoundStorageDir;
 		default:
-			File rootDir = new File(dir);
+			File rootDir = new File(path);
 			if (!rootDir.exists() && !rootDir.mkdirs())
 				throw new IOException(mContext
 						.getString(R.string.cant_create_dir)
