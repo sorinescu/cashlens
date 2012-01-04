@@ -4,7 +4,6 @@
 package com.udesign.cashlens;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
 
 import com.udesign.cashlens.CashLensStorage.Expense;
@@ -22,7 +21,7 @@ public class ExpensesView extends ListView
 	private Date mStartDate = null;
 	private Date mEndDate = null;
 	private int[] mAccountsFilter = null;
-	private ArrayList<Expense> mExpenses = null;
+	private ArrayListWithNotify<Expense> mExpenses = null;
 	private CashLensStorage mStorage = null;
 	
 	/**
