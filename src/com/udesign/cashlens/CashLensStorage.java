@@ -36,7 +36,7 @@ public final class CashLensStorage
 	private static CashLensStorage mInstance;
 
 	private static final String DATABASE_NAME = "cashlens.db";
-	private static final int DATABASE_VERSION = 3;
+	private static final int DATABASE_VERSION = 4;
 
 	private ArrayListWithNotify<Account> mAccounts;
 	private ArrayListWithNotify<Currency> mCurrencies;
@@ -306,18 +306,28 @@ public final class CashLensStorage
 		}
 
 		/**
-		 * The compressed (JPEG) thumbnail data.
+		 * The compressed (JPEG) thumbnail data for portrait orientation.
 		 * <P>
 		 * Type: BLOB
 		 * </P>
 		 */
-		public static final String DATA = "data";
+		public static final String DATA_PORTRAIT = "data_portrait";
+
+		/**
+		 * The compressed (JPEG) thumbnail data for landscape orientation.
+		 * Can be null; in this case, the portrait data will be used.
+		 * <P>
+		 * Type: BLOB
+		 * </P>
+		 */
+		public static final String DATA_LANDSCAPE = "data_landscape";
 
 		public static void onCreate(SQLiteDatabase db)
 		{
 			db.execSQL("CREATE TABLE " + TABLE_NAME + " (" 
 					+ ExpenseThumbnailsTable._ID + " INTEGER PRIMARY KEY," 
-					+ ExpenseThumbnailsTable.DATA + " BLOB"
+					+ ExpenseThumbnailsTable.DATA_PORTRAIT + " BLOB,"
+					+ ExpenseThumbnailsTable.DATA_LANDSCAPE + " BLOB"
 					+ ");");
 		}
 
@@ -654,8 +664,8 @@ public final class CashLensStorage
 		
 		expense.id = (int)id;
 		
-		// TODO notify potential users of expense data that a new one is
-		// available
+		// also add it to loaded expenses
+		mExpenses.add(expense);
 	}
 
 	public void saveExpense(Account account, Currency currency, int amount,
@@ -670,7 +680,8 @@ public final class CashLensStorage
 		image.close();
 		
 		// Generate and save thumbnail
-		byte[] thumbData = ExpenseThumbnail.createFromJPEG(mContext, jpegData);
+		ExpenseThumbnail.Data thumbData = ExpenseThumbnail.createFromJPEG(mContext, jpegData, imageFile.getAbsolutePath());
+		
 		int thumbId = saveExpenseThumbnail(thumbData);
 		
 		// Save expense to database
@@ -797,10 +808,11 @@ public final class CashLensStorage
 		mAccounts.notifyDataChanged();
 	}
 	
-	protected int saveExpenseThumbnail(byte[] thumbData) throws IOException
+	protected int saveExpenseThumbnail(ExpenseThumbnail.Data thumbData) throws IOException
 	{
 		ContentValues values = new ContentValues();
-		values.put(ExpenseThumbnailsTable.DATA, thumbData);
+		values.put(ExpenseThumbnailsTable.DATA_PORTRAIT, thumbData.portraitData);
+		values.put(ExpenseThumbnailsTable.DATA_LANDSCAPE, thumbData.landscapeData);
 
 		int id = (int) db().insert(ExpenseThumbnailsTable.TABLE_NAME, null, values);
 
@@ -815,13 +827,18 @@ public final class CashLensStorage
 	public void loadExpenseThumbnail(ExpenseThumbnail thumb) throws IOException
 	{
 		Cursor cursor = db().query(ExpenseThumbnailsTable.TABLE_NAME,
-				new String[] { ExpenseThumbnailsTable.DATA }, 
+				new String[] { ExpenseThumbnailsTable.DATA_PORTRAIT, ExpenseThumbnailsTable.DATA_LANDSCAPE }, 
 				ExpenseThumbnailsTable._ID + "=" + Integer.toString(thumb.id),
 				null, null, null, null);
 
 		cursor.moveToFirst();
 		
-		thumb.decodeFromByteArray(cursor.getBlob(0));
+		thumb.decodeFromByteArray(cursor.getBlob(0), true);
+		
+		// landscape thumbnail is optional
+		if (!cursor.isNull(1))
+			thumb.decodeFromByteArray(cursor.getBlob(1), false);
+		
 		Log.w("loadExpenseThumbnail", "Loaded thumbnail: ID " + Integer.toString(thumb.id));
 
 		cursor.close();
