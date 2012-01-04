@@ -3,14 +3,12 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
-    <ImageView
+    <com.udesign.cashlens.TouchImageView
         android:id="@android:id/background"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        android:scaleType="centerInside"
-        android:src="@drawable/camera" />
+        android:layout_alignParentTop="true" />
 
     <com.udesign.cashlens.OutlineTextView
         android:id="@android:id/text1"
