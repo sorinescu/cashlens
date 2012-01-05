@@ -18,7 +18,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.widget.ImageView;
 
-public class TouchImageView extends ImageView {
+public class ZoomableImageView extends ImageView {
 
 	Matrix matrix = new Matrix();
 
@@ -39,18 +39,18 @@ public class TouchImageView extends ImageView {
     
     Context context;
 
-    public TouchImageView(Context context) {
+    public ZoomableImageView(Context context) {
         super(context);
         initialize(context);
     }
 
-    public TouchImageView(Context context, AttributeSet attrs, int defStyle)
+    public ZoomableImageView(Context context, AttributeSet attrs, int defStyle)
 	{
 		super(context, attrs, defStyle);
         initialize(context);
 	}
 
-	public TouchImageView(Context context, AttributeSet attrs)
+	public ZoomableImageView(Context context, AttributeSet attrs)
 	{
 		super(context, attrs);
         initialize(context);

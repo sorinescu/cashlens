@@ -24,7 +24,7 @@ public class ViewExpenseActivity extends Activity
 {
 	protected CashLensStorage mStorage = null;
 	protected Expense mExpense = null;
-	protected TouchImageView mImageView;
+	protected ZoomableImageView mImageView;
 	protected TextView mText;
 	protected Bitmap mImage = null;
 	
@@ -58,7 +58,7 @@ public class ViewExpenseActivity extends Activity
 		mExpense = mStorage.getExpense(expenseId);
 		Log.d("ViewExpense.onCreate", "viewing expense with id " + Integer.toString(expenseId) + ", resolved to " + mExpense.toString());
 		
-		mImageView = (TouchImageView)findViewById(android.R.id.background);
+		mImageView = (ZoomableImageView)findViewById(android.R.id.background);
 		mText = (TextView)findViewById(android.R.id.text1);
 		
 		if (mExpense.imagePath != null)
