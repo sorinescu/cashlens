@@ -18,6 +18,7 @@ import android.hardware.SensorManager;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.PictureCallback;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -184,7 +185,12 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 				AddExpenseActivity parent = AddExpenseActivity.this;
 				
 				if (parent.dataValid())
+				{
 					parent.mShouldTakePicture = true;
+					
+					// will also take the picture once in focus
+					parent.startAutoFocusIfPossible();
+				}
 			}
 		});
 		
@@ -344,7 +350,10 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
         mCamera.startPreview();
         mInPreview = true;
 
-        startAutoFocusIfPossible();
+        // Enable this if you want continuous autofocus (the camera will search for focus
+        // all the time, while the user is typing)
+		Log.w("onAutoFocus", "enable the code below if you want continuous focus");
+        //startAutoFocusIfPossible();
 	}
 
 	public void surfaceCreated(SurfaceHolder holder) 
@@ -397,13 +406,14 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		if (success)
 		{
 			mInFocus = true;
-			takePictureIfNecessary();
+			success = takePictureIfNecessary();	// did we take the picture ?
 		}
-		
-		startAutoFocusIfPossible();
+
+		if (!success)	// didn't need to take the picture, or we couldn't focus; retry
+			startAutoFocusIfPossible();
 	}
 	
-	private void startAutoFocusIfPossible()
+	public void startAutoFocusIfPossible()
 	{
 		// first, stop auto focus if active
 		mInFocus = false;
@@ -422,20 +432,14 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
         	}
         	catch (Exception e1)
         	{
-        		// continuous picture focus is not present (API level 14); try other mode
-        		try
-        		{
-        			Field continuousVideoFocus = params.getClass().getField("FOCUS_MODE_CONTINUOUS_PICTURE");
-            		focusMode = (String)continuousVideoFocus.get(params);
-        		}
-        		catch (Exception e2)
-        		{
-        			focusMode = Parameters.FOCUS_MODE_AUTO;	// default
-        		}
+        		// continuous picture focus is not present (API level 14); use default
+    			focusMode = Parameters.FOCUS_MODE_AUTO;
         	}
         	
         	params.setFocusMode(focusMode);
         	mCamera.setParameters(params);
+        	
+        	Log.w("startAutofocus", "using focus mode " + focusMode);
         	
         	if (focusMode != Parameters.FOCUS_MODE_AUTO)
         		mCamera.autoFocus(this);
@@ -449,13 +453,13 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
         			mAutoFocusTask = new Runnable() {
 						public void run() 
 						{
-							if (AddExpenseActivity.this != null &&  mCamera != null)
+							if (AddExpenseActivity.this != null && mCamera != null)
 								mCamera.autoFocus(AddExpenseActivity.this);
 						}
 					};
 					
         		mAutoFocusStarter.removeCallbacks(mAutoFocusTask);
-        		mAutoFocusStarter.postDelayed(mAutoFocusTask, 500);
+        		mAutoFocusStarter.post(mAutoFocusTask);
         	}
         }
         catch (Exception e)
@@ -465,7 +469,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
         }
 	}
 	
-	private void takePictureIfNecessary()
+	private boolean takePictureIfNecessary()
 	{
 		if (mInFocus && mShouldTakePicture)
 		{
@@ -474,7 +478,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 			Camera.Parameters parameters = mCamera.getParameters();
 			
 	        // set EXIF picture orientation based on device orientation
-	    	Log.w("CameraOrientation", "setting rotation " + Integer.toString(mPictureRotation) + 
+	    	Log.w("takePicture", "setting rotation " + Integer.toString(mPictureRotation) + 
 	    			" in portrait mode via Android 2.1 interface (buggy)");
 	        parameters.setRotation(mPictureRotation);
 	        
@@ -488,34 +492,73 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	        }
 	        
 			mCamera.takePicture(null, null, this);
+			return true;
 		}
+		
+		return false;	// didn't need to take picture
 	}
 
 	public void onPictureTaken(byte[] data, Camera camera) 
 	{
-		try 
+		new AsyncTask<byte[], Void, String>() 
 		{
-			Account account = (Account)mAccountSpinner.getSelectedItem();
-			if (account == null)
-				return;
-			Log.w("onPictureTaken", "Selected account is " + account.name + ", id " + Integer.toString(account.id));
-			
-			Currency currency = (Currency)mCurrencySpinner.getSelectedItem();
-			if (currency == null)
-				return;
-			Log.w("onPictureTaken", "Selected currency is " + currency.name + ", id " + Integer.toString(currency.id));
-			
-			mStorage.saveExpense(account, currency, getExpenseFixedPoint(), new Date(), data);
-			Toast.makeText(this, R.string.expense_added, Toast.LENGTH_SHORT).show();
-			
-			// End activity
-			finish();
-		} 
-		catch (IOException e) 
-		{
-			e.printStackTrace();
-			Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-		}
+			@Override
+			protected String doInBackground(byte[]... params)
+			{
+				byte[] data = params[0];
+				
+				try 
+				{
+					Account account = (Account)mAccountSpinner.getSelectedItem();
+					if (account == null)
+						return null;
+					Log.w("onPictureTaken", "Selected account is " + account.name + ", id " + Integer.toString(account.id));
+					
+					Currency currency = (Currency)mCurrencySpinner.getSelectedItem();
+					if (currency == null)
+						return null;
+					Log.w("onPictureTaken", "Selected currency is " + currency.name + ", id " + Integer.toString(currency.id));
+					
+					mStorage.saveExpense(account, currency, getExpenseFixedPoint(), new Date(), data);
+				} 
+				catch (IOException e) 
+				{
+					e.printStackTrace();
+					return e.getLocalizedMessage();
+				}
+				
+				// a Toast will be shown, containing this string
+				return getApplicationContext().getString(R.string.expense_added);
+			}
+
+			/* (non-Javadoc)
+			 * @see android.os.AsyncTask#onPostExecute(java.lang.Object)
+			 */
+			@Override
+			protected void onPostExecute(String message)
+			{
+				// This will be executed on the UI thread
+				if (message == null)	// expense hasn't been added due to incomplete parameters
+					return;
+
+				// We can't use the parent's variables because the activity doesn't exist anymore
+				try
+				{
+					CashLensStorage storage = CashLensStorage.instance(getApplicationContext());
+
+					// Show success or error message and notify listeners that a new expense may be available
+					Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+					storage.notifyExpensesChanged();
+				} catch (IOException e)
+				{
+					e.printStackTrace();
+					Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+				}
+			}
+		}.execute(data);
+		
+		// End activity; expense will be saved asynchronously
+		finish();
 	}
 }
 
