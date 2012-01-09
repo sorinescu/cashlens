@@ -3,7 +3,7 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
-    <com.udesign.cashlens.TouchImageView
+    <com.udesign.cashlens.ZoomableImageView
         android:id="@android:id/background"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
