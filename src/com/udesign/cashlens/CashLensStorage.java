@@ -702,6 +702,7 @@ public final class CashLensStorage
 	{
 		// cache the retrieved expenses locally
 		mExpenses = new ArrayListWithNotify<Expense>();
+		mExpenses.setAutoNotify(false);	// notify will be called manually
 		
 		String cond = "";
 		
@@ -766,6 +767,11 @@ public final class CashLensStorage
 		cursor.close();
 
 		return mExpenses;
+	}
+	
+	public void notifyExpensesChanged()
+	{
+		mExpenses.notifyDataChanged();
 	}
 	
 	public void addAccount(Account account) throws IOException
