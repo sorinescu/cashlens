@@ -698,6 +698,24 @@ public final class CashLensStorage
 		saveExpenseToDB(expense);
 	}
 
+	public void deleteExpense(Expense expense) throws IOException
+	{
+		int affected = db().delete(ExpensesTable.TABLE_NAME,
+				ExpensesTable._ID + "=" + Integer.toString(expense.id), null);
+
+		if (affected != 1)
+			throw new IOException("Deleted " + Integer.toString(affected)
+					+ " items instead of 1 from " + ExpensesTable.TABLE_NAME);
+
+		Log.w("deleteExpense", "Deleted expense: " + expense.amountToString() + 
+				expense.currencyName() + expense.date.toLocaleString() + ", ID " + 
+				Integer.toString(expense.id));
+
+		// Also remove from loaded expenses list
+		mExpenses.remove(expense);
+		mExpenses.notifyDataChanged();
+	}
+
 	public ArrayListWithNotify<Expense> readExpenses(Date startDate, Date endDate, int[] accountIds)
 	{
 		// cache the retrieved expenses locally
@@ -796,9 +814,6 @@ public final class CashLensStorage
 
 	public void deleteAccount(Account account) throws IOException
 	{
-		ContentValues values = new ContentValues();
-		values.put(AccountsTable.NAME, account.name);
-
 		int affected = db().delete(AccountsTable.TABLE_NAME,
 				AccountsTable._ID + "=" + Integer.toString(account.id), null);
 
@@ -806,7 +821,7 @@ public final class CashLensStorage
 			throw new IOException("Deleted " + Integer.toString(affected)
 					+ " items instead of 1 from " + AccountsTable.TABLE_NAME);
 
-		Log.w("addAccount", "Deleted account: " + account.name + ", ID "
+		Log.w("deleteAccount", "Deleted account: " + account.name + ", ID "
 				+ Integer.toString(account.id));
 
 		// Also remove from accounts list
