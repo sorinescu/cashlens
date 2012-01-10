@@ -8,11 +8,17 @@ import java.io.IOException;
 import com.udesign.cashlens.CashLensStorage.Expense;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -112,4 +118,77 @@ public class ViewExpenseActivity extends Activity
 		return mImage;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see android.app.Activity#onCreateOptionsMenu(android.view.Menu)
+	 */
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu)
+	{
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.view_expense_menu, menu);
+		return true;
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onOptionsItemSelected(android.view.MenuItem)
+	 */
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item)
+	{
+	    // Handle item selection
+	    switch (item.getItemId()) 
+	    {
+	    case R.id.editExpense:
+			Intent myIntent = new Intent(this,
+					AccountsActivity.class);
+			startActivity(myIntent);
+	        return true;
+	        
+	    case R.id.delExpense:
+	    	delExpenseWithConfirm();
+	        return true;
+	        
+	    default:
+	        return super.onOptionsItemSelected(item);
+	    }
+	}
+	
+	protected void delExpenseWithConfirm()
+	{
+		AlertDialog.Builder alert = new AlertDialog.Builder(this);
+		
+		alert.setTitle(getString(R.string.delete_expense));
+		alert.setMessage(getString(R.string.are_you_sure));
+
+		alert.setPositiveButton(getString(android.R.string.yes), new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int whichButton) {
+				onDelExpenseOK();
+			}
+		});
+
+		alert.setNegativeButton(getString(android.R.string.no), new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int whichButton) {
+				// do nothing
+			}
+		});
+
+		alert.show();
+	}
+
+	private void onDelExpenseOK()
+	{
+		try
+		{
+			mStorage.deleteExpense(mExpense);
+			Toast.makeText(this, R.string.expense_deleted, Toast.LENGTH_SHORT).show();
+			
+			finish();
+		} 
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
 }
