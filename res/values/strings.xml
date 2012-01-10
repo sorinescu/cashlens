@@ -21,4 +21,7 @@
     <string name="are_you_sure">Are you sure ?</string>
     <string name="no_accounts_defined">There are no expense accounts defined.\nPlease define at least one.</string>
     <string name="no_currencies_defined">There are no currencies defined.\nPlease define at least one.</string>
+    <string name="edit">Edit</string>
+    <string name="delete_expense">Delete expense</string>
+    <string name="expense_deleted">Expense deleted.</string>
 </resources>
