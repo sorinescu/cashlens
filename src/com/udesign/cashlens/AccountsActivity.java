@@ -16,8 +16,10 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ExpandableListView.OnGroupClickListener;
 import android.widget.ExpandableListView.OnGroupCollapseListener;
@@ -30,6 +32,7 @@ public class AccountsActivity extends Activity
 {
 	private CashLensStorage mStorage;
 	private ExpandableListView mAccountsList;
+	private TextView mNoAccountsText;
 	private Account mSelectedAccount = null;
 	private boolean mIgnoreCollapseEvents = false;
 	
@@ -51,9 +54,25 @@ public class AccountsActivity extends Activity
 		}
 		
 		mAccountsList = (ExpandableListView)findViewById(R.id.lstAccounts);
+		mNoAccountsText = (TextView)findViewById(android.R.id.text1);
 
 		AccountsExpandableListAdapter adapter = new AccountsExpandableListAdapter(this);
 		mAccountsList.setAdapter(adapter);
+		
+		// If there are no more accounts following a delete, show "No accounts" text
+		// instead of list, and viceversa
+		mAccountsList.setOnHierarchyChangeListener(new ViewGroup.OnHierarchyChangeListener()
+		{
+			public void onChildViewRemoved(View parent, View child)
+			{
+				updateViewIfNoAccounts();
+			}
+			
+			public void onChildViewAdded(View parent, View child)
+			{
+				updateViewIfNoAccounts();
+			}
+		});
 
 		mAccountsList.setOnGroupCollapseListener(new OnGroupCollapseListener()
 		{
@@ -86,6 +105,8 @@ public class AccountsActivity extends Activity
 				return false;
 			}
 		});
+		
+		updateViewIfNoAccounts();
 	}
 
 	/* (non-Javadoc)
@@ -205,6 +226,20 @@ public class AccountsActivity extends Activity
 		catch (IOException e)
 		{
 			e.printStackTrace();
+		}
+	}
+	
+	private void updateViewIfNoAccounts()
+	{
+		if (mAccountsList.getChildCount() == 0)
+		{
+			mAccountsList.setVisibility(View.INVISIBLE);
+			mNoAccountsText.setVisibility(View.VISIBLE);
+		}
+		else
+		{
+			mNoAccountsText.setVisibility(View.INVISIBLE);
+			mAccountsList.setVisibility(View.VISIBLE);
 		}
 	}
 }
