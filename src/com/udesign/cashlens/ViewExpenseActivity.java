@@ -4,6 +4,7 @@
 package com.udesign.cashlens;
 
 import java.io.IOException;
+import java.text.DateFormat;
 
 import com.udesign.cashlens.CashLensStorage.Expense;
 
@@ -85,12 +86,15 @@ public class ViewExpenseActivity extends Activity
 			mImageView.setImageBitmap(mImage);
 		}
 		
-		String html = "<b>" + mExpense.date.toLocaleString() + "</b>" +  "<br />";
+		DateFormat df = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
+		
+		String html = "<b>" + df.format(mExpense.date) + "</b>" +  "<br />";
 		if (mExpense.description != null)
 			html += mExpense.description + "<br />";
 		
-        html += mExpense.amountToString() + " " + mExpense.currencyName();
-        
+        html += mExpense.amountToString() + " " + mExpense.currencyCode() + ", " 
+        	+ mExpense.accountName();
+
         // formatted text
 		mText.setText(Html.fromHtml(html));
 	}
@@ -142,7 +146,8 @@ public class ViewExpenseActivity extends Activity
 	    {
 	    case R.id.editExpense:
 			Intent myIntent = new Intent(this,
-					AccountsActivity.class);
+					EditExpenseActivity.class);
+			myIntent.putExtra("expense_id", (int)mExpense.id);
 			startActivity(myIntent);
 	        return true;
 	        
