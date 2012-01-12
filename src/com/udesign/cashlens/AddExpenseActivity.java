@@ -6,7 +6,6 @@ import java.lang.reflect.Method;
 import java.util.Date;
 
 import com.udesign.cashlens.CashLensStorage.Account;
-import com.udesign.cashlens.CashLensStorage.Currency;
 
 import android.app.Activity;
 import android.graphics.Color;
@@ -47,8 +46,6 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	private TextView mExpenseText;
 	private Spinner mAccountSpinner;
 	private ArrayAdapterIDAndName<Account> mAccountsAdapter;
-	private Spinner mCurrencySpinner;
-	private ArrayAdapterIDAndName<Currency> mCurrenciesAdapter;
 	private ImageButton mSnapshotButton;
 	private boolean mShouldTakePicture = false;
 	private boolean mInFocus = false;
@@ -109,7 +106,6 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		//mRecordButton = (ImageButton)findViewById(R.id.btnRec);
 
 		mAccountSpinner = (Spinner)findViewById(R.id.spinAccount);
-		mCurrencySpinner = (Spinner)findViewById(R.id.spinCurrency);
 		
 		AppSettings settings = AppSettings.instance(this);
 		int position;
@@ -126,19 +122,6 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	    // automatically select last used account
 	    position = mAccountsAdapter.getItemPositionById(settings.getLastUsedAccount());
 	    mAccountSpinner.setSelection(position);
-	    
-		mCurrenciesAdapter = mStorage.currenciesAdapter(this);
-		if (mCurrenciesAdapter.isEmpty())
-		{
-			Toast.makeText(this, R.string.no_currencies_defined, Toast.LENGTH_LONG).show();
-			finish();
-		}
-
-		mCurrencySpinner.setAdapter(mCurrenciesAdapter);
-
-	    // automatically select last used currency
-	    position = mCurrenciesAdapter.getItemPositionById(settings.getLastUsedCurrency());
-	    mCurrencySpinner.setSelection(position);
 	    
 	    SurfaceHolder holder = mCameraPreview.getHolder();
 		holder.addCallback(this);
@@ -238,9 +221,6 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 			return false;
 		
 		if (mAccountSpinner.getSelectedItemId() == AdapterView.INVALID_ROW_ID)
-			return false;
-		
-		if (mCurrencySpinner.getSelectedItemId() == AdapterView.INVALID_ROW_ID)
 			return false;
 		
 		return true;
@@ -392,10 +372,6 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
         id = mAccountSpinner.getSelectedItemId();
         if (id != AdapterView.INVALID_ROW_ID)
         	settings.setLastUsedAccount((int)id);
-        
-        id = mCurrencySpinner.getSelectedItemId();
-        if (id != AdapterView.INVALID_ROW_ID)
-        	settings.setLastUsedCurrency((int)id);
 	}
 
 	public void onAutoFocus(boolean success, Camera camera) 
@@ -514,12 +490,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 						return null;
 					Log.w("onPictureTaken", "Selected account is " + account.name + ", id " + Integer.toString(account.id));
 					
-					Currency currency = (Currency)mCurrencySpinner.getSelectedItem();
-					if (currency == null)
-						return null;
-					Log.w("onPictureTaken", "Selected currency is " + currency.name + ", id " + Integer.toString(currency.id));
-					
-					mStorage.saveExpense(account, currency, getExpenseFixedPoint(), new Date(), data);
+					mStorage.saveExpense(account, getExpenseFixedPoint(), new Date(), data);
 				} 
 				catch (IOException e) 
 				{
