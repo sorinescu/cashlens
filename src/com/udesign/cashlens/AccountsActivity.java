@@ -10,6 +10,7 @@ import com.udesign.cashlens.CashLensStorage.Account;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -17,7 +18,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.ExpandableListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -130,7 +130,9 @@ public class AccountsActivity extends Activity
 	    switch (item.getItemId()) 
 	    {
 	    case R.id.addAccount:
-	    	newAccountFromUser();
+			Intent myIntent = new Intent(this,
+					AddEditAccount.class);
+			startActivity(myIntent);
 	        return true;
 	        
 	    case R.id.delAccount:
@@ -140,32 +142,6 @@ public class AccountsActivity extends Activity
 	    default:
 	        return super.onOptionsItemSelected(item);
 	    }
-	}
-	
-	protected void newAccountFromUser()
-	{
-		AlertDialog.Builder alert = new AlertDialog.Builder(this);
-
-		alert.setTitle(getString(R.string.new_account));
-		alert.setMessage(getString(R.string.enter_account_name));
-
-		// Set an EditText view to get user input 
-		final EditText input = new EditText(this);
-		alert.setView(input);
-
-		alert.setPositiveButton(getString(android.R.string.ok), new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int whichButton) {
-				onNewAccountOK(input.getText().toString());
-			}
-		});
-
-		alert.setNegativeButton(getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int whichButton) {
-				// do nothing
-			}
-		});
-
-		alert.show();
 	}
 	
 	protected void delAccountWithConfirm()
@@ -193,25 +169,6 @@ public class AccountsActivity extends Activity
 		alert.show();
 	}
 	
-	private void onNewAccountOK(String accountName)
-	{
-		if (accountName == null)
-			return;
-		
-		Account account = new Account();
-		
-		account.name = accountName.toString();
-		try
-		{
-			mStorage.addAccount(account);
-			Toast.makeText(this, R.string.account_added, Toast.LENGTH_SHORT).show();
-		} 
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-	}
-
 	private void onDelAccountOK()
 	{
 		if (mSelectedAccount == null)
