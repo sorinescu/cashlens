@@ -6,14 +6,18 @@ package com.udesign.cashlens;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.DecimalFormatSymbols;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.TimeZone;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.res.XmlResourceParser;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -36,7 +40,7 @@ public final class CashLensStorage
 	private static CashLensStorage mInstance;
 
 	private static final String DATABASE_NAME = "cashlens.db";
-	private static final int DATABASE_VERSION = 4;
+	private static final int DATABASE_VERSION = 6;
 
 	private ArrayListWithNotify<Account> mAccounts;
 	private ArrayListWithNotify<Currency> mCurrencies;
@@ -47,6 +51,7 @@ public final class CashLensStorage
 	 */
 	public static class Account extends ArrayAdapterIDAndName.IDAndName
 	{
+		int currencyId;
 	}
 
 	/**
@@ -69,10 +74,20 @@ public final class CashLensStorage
 		 */
 		public static final String NAME = "name";
 
+		/**
+		 * The id of the account currency (from XML).
+		 * <P>
+		 * Type: INTEGER
+		 * </P>
+		 */
+		public static final String CURRENCY = "currency_id";
+
 		public static void onCreate(SQLiteDatabase db)
 		{
-			db.execSQL("CREATE TABLE " + TABLE_NAME + " (" + AccountsTable._ID
-					+ " INTEGER PRIMARY KEY," + AccountsTable.NAME + " TEXT"
+			db.execSQL("CREATE TABLE " + TABLE_NAME + " (" 
+					+ AccountsTable._ID	+ " INTEGER PRIMARY KEY," 
+					+ AccountsTable.NAME + " TEXT,"
+					+ AccountsTable.CURRENCY + " INTEGER"
 					+ ");");
 		}
 
@@ -92,53 +107,13 @@ public final class CashLensStorage
 	 * Currency data.
 	 */
 	public static class Currency extends ArrayAdapterIDAndName.IDAndName
+		implements Comparable<Currency>
 	{
-	}
+		String code;
 
-	/**
-	 * Currencies DB table structure.
-	 */
-	private static class CurrenciesTable implements BaseColumns
-	{
-		public static final String TABLE_NAME = "currencies";
-
-		// This class cannot be instantiated
-		private CurrenciesTable()
+		public int compareTo(Currency another)
 		{
-		}
-
-		/**
-		 * The name of the currency.
-		 * <P>
-		 * Type: TEXT
-		 * </P>
-		 */
-		public static final String NAME = "name";
-
-		public static void onCreate(SQLiteDatabase db)
-		{
-			db.execSQL("CREATE TABLE " + TABLE_NAME + " ("
-					+ CurrenciesTable._ID + " INTEGER PRIMARY KEY,"
-					+ CurrenciesTable.NAME + " TEXT" + ");");
-
-			// TODO use dynamic data
-			ContentValues currTest1 = new ContentValues();
-			currTest1.put(NAME, "USD");
-			db.insert(TABLE_NAME, null, currTest1);
-			ContentValues currTest2 = new ContentValues();
-			currTest2.put(NAME, "EUR");
-			db.insert(TABLE_NAME, null, currTest2);
-		}
-
-		public static void onUpgrade(SQLiteDatabase db, int oldVersion,
-				int newVersion)
-		{
-			// TODO this is not acceptable; upgrade DB
-			Log.w(AccountsTable.class.getName(),
-					"Upgrading database from version " + oldVersion + " to "
-							+ newVersion + ", which will destroy all old data");
-			db.execSQL("DROP TABLE IF EXISTS " + CurrenciesTable.TABLE_NAME);
-			onCreate(db);
+			return name.compareTo(another.name);
 		}
 	}
 
@@ -153,7 +128,6 @@ public final class CashLensStorage
 		Date date;
 		int accountId;
 		int amount;	// fixed point
-		int currencyId;
 		int thumbnailId;
 		String description;
 		String imagePath;
@@ -167,17 +141,99 @@ public final class CashLensStorage
 		
 		public String amountToString()
 		{
-			return Integer.toString(amount / 100) + "." + 
-				Integer.toString(amount % 100);
+			return amountToString(amount);
 		}
 		
-		public String currencyName()
+		public static String amountToString(int amount)
 		{
-			Currency currency = mStorage.getCurrency(currencyId);
+			DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+			
+			return Integer.toString(amount / 100) + symbols.getDecimalSeparator() + 
+				Integer.toString((amount / 10) % 10) + Integer.toString(amount % 10);
+		}
+		
+		public String currencyCode()
+		{
+			Account account = mStorage.getAccount(accountId);
+			Currency currency = mStorage.getCurrency(account.currencyId);
 			if (currency != null)
-				return currency.name;
+				return currency.code;
 			
 			return "???";
+		}
+
+		public int currencyId()
+		{
+			return mStorage.getAccount(accountId).currencyId;
+		}
+
+		public String accountName()
+		{
+			Account account = mStorage.getAccount(accountId);
+			if (account != null)
+				return account.name;
+			
+			return "???";
+		}
+
+		public void copyFrom(Expense expense)
+		{
+			id = expense.id;
+			accountId = expense.accountId;
+			thumbnailId = expense.thumbnailId;
+			amount = expense.amount;
+			date = (Date)expense.date.clone();
+			if (expense.audioPath != null)
+				audioPath = new String(expense.audioPath);
+			else
+				audioPath = null;
+			if (expense.imagePath != null)
+				imagePath = new String(expense.imagePath);
+			else
+				imagePath = null;
+			if (expense.description != null)
+				description = new String(expense.description);
+			else
+				description = null;
+		}
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object o)
+		{
+			Expense expense = (Expense)o;
+		
+			boolean audioPathSame;
+			boolean imagePathSame;
+			boolean descriptionSame;
+			
+			// First get rid of possible null values
+			if ((audioPath == null || expense.audioPath == null))
+				audioPathSame = (audioPath == expense.audioPath);
+			else
+				audioPathSame = expense.audioPath.equals(audioPath); 
+
+			if ((imagePath == null || expense.imagePath == null))
+				imagePathSame = (imagePath == expense.imagePath);
+			else
+				imagePathSame = expense.imagePath.equals(imagePath);
+
+			if ((description == null || expense.description == null))
+				descriptionSame = (description == expense.description);
+			else
+				descriptionSame = expense.description.equals(description);
+			
+			return 
+				expense.id == id &&
+				expense.accountId == accountId &&
+				expense.amount == amount &&
+				expense.thumbnailId == thumbnailId &&
+				expense.date.equals(date) &&
+				audioPathSame &&
+				imagePathSame &&
+				descriptionSame;
 		}
 	}
 	
@@ -218,14 +274,6 @@ public final class CashLensStorage
 		public static final String AMOUNT = "amount";
 
 		/**
-		 * The currency of the expense.
-		 * <P>
-		 * Type: INTEGER FOREIGN KEY
-		 * </P>
-		 */
-		public static final String CURRENCY = "currency";
-
-		/**
 		 * The text description of the expense (optional).
 		 * <P>
 		 * Type: TEXT
@@ -262,7 +310,6 @@ public final class CashLensStorage
 			db.execSQL("CREATE TABLE " + ExpensesTable.TABLE_NAME + " ("
 					+ ExpensesTable._ID + " INTEGER PRIMARY KEY,"
 					+ ExpensesTable.ACCOUNT + " INTEGER,"
-					+ ExpensesTable.CURRENCY + " INTEGER,"
 					+ ExpensesTable.AMOUNT + " INTEGER," 
 					+ ExpensesTable.DATE + " INTEGER NOT NULL," 
 					+ ExpensesTable.DESCRIPTION + " TEXT,"
@@ -272,9 +319,6 @@ public final class CashLensStorage
 					+ "FOREIGN KEY ("
 						+ ExpensesTable.ACCOUNT + ") REFERENCES "
 						+ AccountsTable.TABLE_NAME + "(" + AccountsTable._ID + "),"
-					+ "FOREIGN KEY (" 
-						+ ExpensesTable.CURRENCY + ") REFERENCES " 
-						+ CurrenciesTable.TABLE_NAME + "(" + CurrenciesTable._ID + ")" 
 					+ "FOREIGN KEY (" 
 						+ ExpensesTable.IMAGE_THUMBNAIL + ") REFERENCES " 
 						+ ExpenseThumbnailsTable.TABLE_NAME + "(" + ExpenseThumbnailsTable._ID + ")" 
@@ -354,7 +398,6 @@ public final class CashLensStorage
 		public void onCreate(SQLiteDatabase db)
 		{
 			AccountsTable.onCreate(db);
-			CurrenciesTable.onCreate(db);
 			ExpensesTable.onCreate(db);
 			ExpenseThumbnailsTable.onCreate(db);
 		}
@@ -363,7 +406,6 @@ public final class CashLensStorage
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
 		{
 			AccountsTable.onUpgrade(db, oldVersion, newVersion);
-			CurrenciesTable.onUpgrade(db, oldVersion, newVersion);
 			ExpensesTable.onUpgrade(db, oldVersion, newVersion);
 			ExpenseThumbnailsTable.onUpgrade(db, oldVersion, newVersion);
 		}
@@ -379,6 +421,15 @@ public final class CashLensStorage
 					.getApplicationContext());
 
 		return mInstance;
+	}
+
+	public Account getAccount(int accountId)
+	{
+		for (Account account: mAccounts)
+			if (account.id == accountId)
+				return account;
+		
+		return null;
 	}
 
 	public Currency getCurrency(int currencyId)
@@ -568,6 +619,7 @@ public final class CashLensStorage
 
 		int idIndex = cursor.getColumnIndex(AccountsTable._ID);
 		int nameIndex = cursor.getColumnIndex(AccountsTable.NAME);
+		int currencyIdIndex = cursor.getColumnIndex(AccountsTable.CURRENCY);
 
 		cursor.moveToFirst();
 		while (!cursor.isAfterLast())
@@ -576,6 +628,7 @@ public final class CashLensStorage
 
 			account.id = cursor.getInt(idIndex);
 			account.name = cursor.getString(nameIndex);
+			account.currencyId = cursor.getInt(currencyIdIndex);
 
 			mAccounts.add(account);
 
@@ -595,30 +648,93 @@ public final class CashLensStorage
 
 	protected void readCurrencies()
 	{
-		Cursor cursor = db().query(CurrenciesTable.TABLE_NAME, null, null,
-				null, null, null, CurrenciesTable.NAME);
-
+		XmlResourceParser xmlParser = mContext.getResources().getXml(R.xml.dl_iso_table_a1);
+		
 		mCurrencies.clear();
+		
+		HashSet<Integer> addedCurrencyIds = new HashSet<Integer>();
+		Currency currency = null;
 
-		int idIndex = cursor.getColumnIndex(AccountsTable._ID);
-		int nameIndex = cursor.getColumnIndex(AccountsTable.NAME);
+		final int EMPTY=0;
+		final int IN_ISO_CURRENCY=1;
+		final int IN_CURRENCY=2;
+		final int IN_ALPHABETIC_CODE=3;
+		final int IN_NUMERIC_CODE=4;
+		final int IN_IGNORED_TAG=5;
 
-		cursor.moveToFirst();
-		while (!cursor.isAfterLast())
+		int state = EMPTY;
+		
+		try
 		{
-			Currency currency = new Currency();
-
-			currency.id = cursor.getInt(idIndex);
-			currency.name = cursor.getString(nameIndex);
-
-			mCurrencies.add(currency);
-
-			cursor.moveToNext();
+			xmlParser.next();
+			
+			int eventType = xmlParser.getEventType();
+			while (eventType != XmlResourceParser.END_DOCUMENT)
+			{
+		        if (xmlParser.getEventType() == XmlResourceParser.START_TAG) 
+		        {
+	                String s = xmlParser.getName();
+	 
+	                if (s.equals("ISO_CURRENCY"))
+	                {
+	                	currency = new Currency();
+	                	state = IN_ISO_CURRENCY;
+	                }
+	                else if (s.equals("CURRENCY"))
+	                	state = IN_CURRENCY;
+	                else if (s.equals("ALPHABETIC_CODE"))
+	                	state = IN_ALPHABETIC_CODE;
+	                else if (s.equals("NUMERIC_CODE"))
+	                	state = IN_NUMERIC_CODE;
+	                else if (state == IN_ISO_CURRENCY)
+	                	state = IN_IGNORED_TAG;
+		        } 
+			    else if (xmlParser.getEventType() == XmlResourceParser.END_TAG) 
+			    {
+	                if (state == IN_ISO_CURRENCY)
+	                {
+	                	Integer id = new Integer(currency.id);
+	                	
+	                	if (!addedCurrencyIds.contains(id))
+	                	{
+		                	Log.d("readCurrencies", "New currency: id " + Integer.toString(currency.id) +
+		                			", name " + currency.name + ", code " + currency.code);
+		                	
+		                	// Currency has been read; add to list
+		                	mCurrencies.add(currency);
+		                	addedCurrencyIds.add(id);
+	                	}
+	                	
+	                	currency = null;
+	                	state = EMPTY;
+	                }
+	                else if (state != EMPTY)
+	                	state = IN_ISO_CURRENCY;
+		        } 
+			    else if (xmlParser.getEventType() == XmlResourceParser.TEXT) 
+			    {
+			    	String txt = xmlParser.getText();
+			    	
+			    	if (state == IN_CURRENCY)
+			    		currency.name = txt;
+			    	else if (state == IN_ALPHABETIC_CODE)
+			    		currency.code = txt;
+			    	else if (state == IN_NUMERIC_CODE)
+			    		currency.id = Integer.parseInt(txt);
+		        }
+		 
+		        xmlParser.next();
+			}
+	 
+			xmlParser.close();
+		}
+		catch (Exception e) 
+		{
+			currency = null;
 		}
 
-		cursor.close();
-
 		// auto notification is turned off; manually notify of changed data
+		Collections.sort(mCurrencies);
 		mCurrencies.notifyDataChanged();
 	}
 
@@ -650,7 +766,6 @@ public final class CashLensStorage
 	{
 		ContentValues values = new ContentValues();
 		values.put(ExpensesTable.ACCOUNT, expense.accountId);
-		values.put(ExpensesTable.CURRENCY, expense.currencyId);
 		values.put(ExpensesTable.AMOUNT, expense.amount);
 		values.put(ExpensesTable.DATE, dateToUTCInt(expense.date));
 		values.put(ExpensesTable.DESCRIPTION, expense.description);
@@ -668,7 +783,7 @@ public final class CashLensStorage
 		mExpenses.add(expense);
 	}
 
-	public void saveExpense(Account account, Currency currency, int amount,
+	public void saveExpense(Account account, int amount,
 			Date date, byte[] jpegData) throws IOException
 	{
 		File imageFile = randomFile(storageDirectory(DataType.IMAGE), ".jpeg");
@@ -687,7 +802,6 @@ public final class CashLensStorage
 		// Save expense to database
 		Expense expense = new Expense(this);
 		expense.accountId = account.id;
-		expense.currencyId = currency.id;
 		expense.amount = amount;
 		expense.date = date;
 		expense.audioPath = null;
@@ -696,6 +810,31 @@ public final class CashLensStorage
 		expense.thumbnailId = thumbId;
 		
 		saveExpenseToDB(expense);
+	}
+
+	public void updateExpense(Expense expense) throws IOException
+	{
+		ContentValues values = new ContentValues();
+		values.put(ExpensesTable.ACCOUNT, expense.accountId);
+		values.put(ExpensesTable.AMOUNT, expense.amount);
+		values.put(ExpensesTable.DATE, dateToUTCInt(expense.date));
+		values.put(ExpensesTable.DESCRIPTION, expense.description);
+		values.put(ExpensesTable.IMAGE_FILENAME, expense.imagePath);
+		values.put(ExpensesTable.IMAGE_THUMBNAIL, expense.thumbnailId);
+		values.put(ExpensesTable.AUDIO_FILENAME, expense.audioPath);
+
+		
+		int affected = db().update(ExpensesTable.TABLE_NAME, values, 
+				ExpensesTable._ID + "=" + Integer.toString(expense.id), null);
+		if (affected != 1)
+			throw new IOException("Updated " + Integer.toString(affected)
+					+ " items instead of 1 from " + ExpensesTable.TABLE_NAME);
+
+		Log.w("updateExpense", "Updated expense: " + expense.amountToString() + 
+				expense.currencyCode() + expense.date.toLocaleString() + ", ID " + 
+				Integer.toString(expense.id));
+
+		mExpenses.notifyDataChanged();
 	}
 
 	public void deleteExpense(Expense expense) throws IOException
@@ -708,7 +847,7 @@ public final class CashLensStorage
 					+ " items instead of 1 from " + ExpensesTable.TABLE_NAME);
 
 		Log.w("deleteExpense", "Deleted expense: " + expense.amountToString() + 
-				expense.currencyName() + expense.date.toLocaleString() + ", ID " + 
+				expense.currencyCode() + expense.date.toLocaleString() + ", ID " + 
 				Integer.toString(expense.id));
 
 		// Also remove from loaded expenses list
@@ -754,7 +893,6 @@ public final class CashLensStorage
 
 		int idIndex = cursor.getColumnIndex(ExpensesTable._ID);
 		int accountIdIndex = cursor.getColumnIndex(ExpensesTable.ACCOUNT);
-		int currencyIdIndex = cursor.getColumnIndex(ExpensesTable.CURRENCY);
 		int amountIndex = cursor.getColumnIndex(ExpensesTable.AMOUNT);
 		int dateIndex = cursor.getColumnIndex(ExpensesTable.DATE);;
 		int audioPathIndex = cursor.getColumnIndex(ExpensesTable.AUDIO_FILENAME);
@@ -769,7 +907,6 @@ public final class CashLensStorage
 
 			expense.id = cursor.getInt(idIndex);
 			expense.accountId = cursor.getInt(accountIdIndex);
-			expense.currencyId = cursor.getInt(currencyIdIndex);
 			expense.amount = cursor.getInt(amountIndex);
 			expense.date = dateFromUTCInt(cursor.getLong(dateIndex));
 			expense.audioPath = cursor.getString(audioPathIndex);
@@ -796,7 +933,8 @@ public final class CashLensStorage
 	{
 		ContentValues values = new ContentValues();
 		values.put(AccountsTable.NAME, account.name);
-
+		values.put(AccountsTable.CURRENCY, account.currencyId);
+		
 		long id = (int) db().insert(AccountsTable.TABLE_NAME, null, values);
 
 		if (id < 0)
