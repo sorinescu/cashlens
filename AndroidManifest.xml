@@ -34,8 +34,16 @@
             android:name=".AccountsActivity" >
         </activity>
         <activity
+            android:label="@string/edit_account"
+            android:name=".AddEditAccount" >
+        </activity>
+        <activity
             android:label="@string/view_expense"
             android:name=".ViewExpenseActivity" >
+        </activity>
+        <activity
+            android:label="@string/edit_expense"
+            android:name=".EditExpenseActivity" >
         </activity>
         </application>
 
