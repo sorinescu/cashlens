@@ -14,10 +14,20 @@
 
     <com.udesign.cashlens.OutlineTextView
         android:id="@android:id/text1"
-        android:layout_width="fill_parent"
+        android:layout_width="wrap_content"
         android:layout_height="fill_parent"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
-        android:text="TextView" />
+        android:text="TextView1" />
+
+    <com.udesign.cashlens.OutlineTextView
+        android:id="@android:id/text2"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@android:id/text1"
+        android:gravity="right"
+        android:text="TextView2" />
 
 </RelativeLayout>
