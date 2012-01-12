@@ -13,7 +13,7 @@
     <string name="cant_insert">Can\'t insert new object into database.</string>
     <string name="manage_accounts">Accounts</string>
     <string name="manage_currencies">Currencies</string>
-    <string name="new_account">New account</string>
+    <string name="edit_account">Edit account</string>
     <string name="account_added">Account added</string>
     <string name="delete_account">Delete account</string>
     <string name="account_deleted">Account deleted</string>
@@ -24,4 +24,13 @@
     <string name="edit">Edit</string>
     <string name="delete_expense">Delete expense</string>
     <string name="expense_deleted">Expense deleted.</string>
+    <string name="date">Date</string>
+    <string name="time">Time</string>
+    <string name="edit_expense">Edit expense</string>
+    <string name="amount">Amount</string>
+    <string name="save">Save</string>
+    <string name="discard">Discard</string>
+    <string name="account">Account</string>
+    <string name="currency">Currency</string>
+    <string name="total">Total</string>
 </resources>
