@@ -10,8 +10,9 @@ import com.udesign.cashlens.CashLensStorage.Currency;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -103,12 +104,21 @@ public final class AddEditAccount extends Activity
 			}
 		});
 
-		mAccountTxt.setOnKeyListener(new View.OnKeyListener()
+		mAccountTxt.addTextChangedListener(new TextWatcher()
 		{
-			public boolean onKey(View v, int keyCode, KeyEvent event)
+			
+			public void onTextChanged(CharSequence s, int start, int before, int count)
+			{
+			}
+			
+			public void beforeTextChanged(CharSequence s, int start, int count,
+					int after)
+			{
+			}
+			
+			public void afterTextChanged(Editable s)
 			{
 				updateSaveEnabled();
-				return false;
 			}
 		});
 		
