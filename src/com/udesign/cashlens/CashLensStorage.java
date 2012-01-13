@@ -697,8 +697,8 @@ public final class CashLensStorage
 	                	
 	                	if (!addedCurrencyIds.contains(id))
 	                	{
-		                	Log.d("readCurrencies", "New currency: id " + Integer.toString(currency.id) +
-		                			", name " + currency.name + ", code " + currency.code);
+//		                	Log.d("readCurrencies", "New currency: id " + Integer.toString(currency.id) +
+//		                			", name " + currency.name + ", code " + currency.code);
 		                	
 		                	// Currency has been read; add to list
 		                	mCurrencies.add(currency);
@@ -779,7 +779,8 @@ public final class CashLensStorage
 		
 		expense.id = (int)id;
 		
-		// also add it to loaded expenses
+		// also add it to loaded expenses, but don't notify listeners that data changed
+		// (must be done on UI thread and this function is called on a worker thread)
 		mExpenses.add(expense);
 	}
 
@@ -810,6 +811,9 @@ public final class CashLensStorage
 		expense.thumbnailId = thumbId;
 		
 		saveExpenseToDB(expense);
+		
+		Log.d("saveExpense", "Saved expense with id " + Integer.toString(expense.id) + ", account " + 
+				expense.accountName() + ", amount " + expense.amountToString());
 	}
 
 	public void updateExpense(Expense expense) throws IOException
