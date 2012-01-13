@@ -112,9 +112,9 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 		String currencyName = expense.currencyCode();
 		
 		String[] amounts = computeSum(expense, position);
-		html = expense.accountName() + ": " + amounts[1] + currencyName + "<br />" +
+		html = expense.accountName() + ": " + amounts[1] + " " + currencyName + "<br />" +
 			parent.getResources().getString(R.string.total) + " (" + 
-			currencyName + "):" + amounts[0] + currencyName;
+			currencyName + "): " + amounts[0] + " " + currencyName;
 		
 		totalText.setText(Html.fromHtml(html));
 		
@@ -155,6 +155,7 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 
 	public void onDataChanged()
 	{
+		invalidateSums();
 		notifyDataSetChanged();
 	}
 	
@@ -189,11 +190,12 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 	{
 		String[] res = new String[2];
 
-		Log.d("computeSum", "computing for position " + Integer.toString(position));
-		
 		// We need to recompute the sums ins this case; we can only compute forward
 		if (position < mTotalPosition)
 			invalidateSums();
+		
+		Log.d("computeSum", "computing from position " + Integer.toString(mTotalPosition + 1) + 
+				" to position " + Integer.toString(position));
 		
 		for (int i = mTotalPosition + 1; i < position; ++i)
 		{
@@ -213,13 +215,16 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 		Integer totalPerAccount = getTotalPerAccount(expenseToAdd.accountId);
 		Integer totalPerCurrency = getTotalPerCurrency(currencyId);
 		
-		totalPerCurrency += expenseToAdd.amount;
-		mTotalPerCurrency.put(new Integer(currencyId), totalPerCurrency);
-
-		totalPerAccount += expenseToAdd.amount;		// should also update the stored value in the map
-		mTotalPerAccount.put(new Integer(expenseToAdd.accountId), totalPerAccount);
-		
-		mTotalPosition = position;
+		if (position > mTotalPosition)	// can also be == mTotalPosition, in which case it's already added
+		{
+			totalPerCurrency += expenseToAdd.amount;
+			mTotalPerCurrency.put(new Integer(currencyId), totalPerCurrency);
+	
+			totalPerAccount += expenseToAdd.amount;		// should also update the stored value in the map
+			mTotalPerAccount.put(new Integer(expenseToAdd.accountId), totalPerAccount);
+			
+			mTotalPosition = position;
+		}
 		
 		res[0] = Expense.amountToString(totalPerCurrency);
 		res[1] = Expense.amountToString(totalPerAccount);
