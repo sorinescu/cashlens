@@ -8,15 +8,18 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup.OnHierarchyChangeListener;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
-public class CashLensActivity extends Activity
+public final class CashLensActivity extends Activity
 {
 	private Button mAddExpenseBtn;
 	private ExpensesView mExpenses; 
+	private TextView mNoExpensesText;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -27,6 +30,7 @@ public class CashLensActivity extends Activity
 
 		mAddExpenseBtn = (Button)findViewById(R.id.addExpense);
 		mExpenses = (ExpensesView)findViewById(R.id.expensesLst);
+		mNoExpensesText = (TextView)findViewById(android.R.id.text1);
 		
 		// this can generate an IOException during the initialization of ExpensesView
 		// which is typically caused by a missing SD card
@@ -68,6 +72,21 @@ public class CashLensActivity extends Activity
 		});
 		
 		mExpenses.setFilter(null, null, null);
+		
+		mExpenses.setOnHierarchyChangeListener(new OnHierarchyChangeListener()
+		{
+			public void onChildViewRemoved(View parent, View child)
+			{
+				updateViewIfNoExpenses();
+			}
+			
+			public void onChildViewAdded(View parent, View child)
+			{
+				updateViewIfNoExpenses();
+			}
+		});
+		
+		updateViewIfNoExpenses();
 	}
 
 	/*
@@ -98,12 +117,26 @@ public class CashLensActivity extends Activity
 			startActivity(myIntent);
 	        return true;
 	        
-	    case R.id.manage_currencies:
+	    case R.id.settings:
 	    	// TODO implement
 	        return true;
 	        
 	    default:
 	        return super.onOptionsItemSelected(item);
 	    }
+	}
+		
+	private void updateViewIfNoExpenses()
+	{
+		if (mExpenses.getChildCount() == 0)
+		{
+			mExpenses.setVisibility(View.INVISIBLE);
+			mNoExpensesText.setVisibility(View.VISIBLE);
+		}
+		else
+		{
+			mNoExpensesText.setVisibility(View.INVISIBLE);
+			mExpenses.setVisibility(View.VISIBLE);
+		}
 	}
 }
