@@ -1,22 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:id="@+id/mainwindow" >
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
 
     <com.udesign.cashlens.ExpensesView
         android:id="@+id/expensesLst"
-    	android:layout_width="fill_parent"
-    	android:layout_height="fill_parent"
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content"
+    	android:layout_alignParentTop="true"
+    	android:layout_above="@+id/addExpense" />
+    
+    <TextView
+        android:id="@android:id/text1"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
     	android:layout_alignParentTop="true"
     	android:layout_above="@+id/addExpense"
-        />
+        android:editable="false"
+        android:gravity="center"
+        android:text="@string/no_expenses"
+        android:visibility="visible" />
     
     <Button
         android:id="@+id/addExpense"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:text="@string/add_expense" />
+        android:text="@string/add_expense"
+        android:layout_alignParentBottom="true" />
 
 </RelativeLayout>

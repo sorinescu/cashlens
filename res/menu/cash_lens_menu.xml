@@ -2,10 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
     <item 
     	android:id="@+id/manage_accounts" 
-    	android:title="@string/manage_accounts" 
+    	android:title="@string/manage_accounts"
+    	android:icon="@drawable/ic_menu_account_list"
     />
     <item 
-    	android:id="@+id/manage_currencies" 
-    	android:title="@string/manage_currencies" 
+    	android:id="@+id/settings" 
+    	android:title="@string/settings" 
+    	android:icon="@android:drawable/ic_menu_preferences"
     />
 </menu>
