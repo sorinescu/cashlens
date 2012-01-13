@@ -12,7 +12,7 @@
     <string name="cant_create_file">Can\'t create file\ </string>
     <string name="cant_insert">Can\'t insert new object into database.</string>
     <string name="manage_accounts">Accounts</string>
-    <string name="manage_currencies">Currencies</string>
+    <string name="settings">Settings</string>
     <string name="edit_account">Edit account</string>
     <string name="account_added">Account added</string>
     <string name="delete_account">Delete account</string>
@@ -33,4 +33,5 @@
     <string name="account">Account</string>
     <string name="currency">Currency</string>
     <string name="total">Total</string>
+    <string name="no_expenses">No expenses.</string>
 </resources>
