@@ -4,6 +4,8 @@
 package com.udesign.cashlens;
 
 import java.io.IOException;
+import java.util.Calendar;
+import java.util.Date;
 
 import android.content.Context;
 import android.content.res.Configuration;
@@ -93,5 +95,52 @@ public final class CashLensUtils
 	    }
 
 	    return orientation;
+	}
+	
+	public static Date startOfDay(Date origDate)
+	{
+		return new Date(origDate.getYear(), origDate.getMonth(), origDate.getDate());
+	}
+	
+	public static Date startOfThisMonth(int startDayOfMonth)
+	{
+		Calendar cal = Calendar.getInstance();
+		Date now = cal.getTime();
+		
+		if (now.getDate() < startDayOfMonth)	// the start is startDayOfMonth, last month
+			cal.add(Calendar.MONTH, -1);
+		
+		int lastDayInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+		
+		if (startDayOfMonth <= lastDayInMonth)
+			cal.set(Calendar.DATE, startDayOfMonth);
+		else
+		{
+			cal.add(Calendar.MONTH, 1);
+			cal.set(Calendar.DATE, 1);
+		}
+
+		return startOfDay(cal.getTime());
+	}
+	
+	public static Date endOfThisMonth(int startDayOfMonth)
+	{
+		Calendar cal = Calendar.getInstance();
+		Date now = cal.getTime();
+		
+		if (now.getDate() >= startDayOfMonth)// the end is one day past startDayOfMonth, next month
+			cal.add(Calendar.MONTH, 1);
+		
+		int lastDayInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+		
+		if (startDayOfMonth < lastDayInMonth)
+			cal.set(Calendar.DATE, startDayOfMonth + 1);
+		else
+		{
+			cal.add(Calendar.MONTH, 1);
+			cal.set(Calendar.DATE, 1);
+		}
+
+		return startOfDay(cal.getTime());
 	}
 }
