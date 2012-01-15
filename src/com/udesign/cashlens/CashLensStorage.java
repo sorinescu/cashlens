@@ -31,20 +31,21 @@ import android.util.Log;
  */
 public final class CashLensStorage
 {
-	protected Context mContext;
-	protected File mImageStorageDir;
-	protected File mSoundStorageDir;
-	protected DBHelper mHelper;
+	private Context mContext;
+	private File mImageStorageDir;
+	private File mSoundStorageDir;
+	private DBHelper mHelper;
 	private Random mRandom = new Random();
 
 	private static CashLensStorage mInstance;
 
 	private static final String DATABASE_NAME = "cashlens.db";
-	private static final int DATABASE_VERSION = 6;
+	private static final int DATABASE_VERSION = 7;
 
 	private ArrayListWithNotify<Account> mAccounts;
 	private ArrayListWithNotify<Currency> mCurrencies;
 	private ArrayListWithNotify<Expense> mExpenses;
+	private ExpenseFilter[] mExpenseFilters;
 
 	/**
 	 * Account data.
@@ -52,6 +53,7 @@ public final class CashLensStorage
 	public static class Account extends ArrayAdapterIDAndName.IDAndName
 	{
 		int currencyId;
+		int monthStartDay;
 	}
 
 	/**
@@ -82,12 +84,21 @@ public final class CashLensStorage
 		 */
 		public static final String CURRENCY = "currency_id";
 
+		/**
+		 * The day the month starts.
+		 * <P>
+		 * Type: INTEGER
+		 * </P>
+		 */
+		public static final String MONTH_START = "month_start";
+
 		public static void onCreate(SQLiteDatabase db)
 		{
 			db.execSQL("CREATE TABLE " + TABLE_NAME + " (" 
 					+ AccountsTable._ID	+ " INTEGER PRIMARY KEY," 
 					+ AccountsTable.NAME + " TEXT,"
-					+ AccountsTable.CURRENCY + " INTEGER"
+					+ AccountsTable.CURRENCY + " INTEGER,"
+					+ AccountsTable.MONTH_START + " INTEGER"
 					+ ");");
 		}
 
@@ -620,6 +631,7 @@ public final class CashLensStorage
 		int idIndex = cursor.getColumnIndex(AccountsTable._ID);
 		int nameIndex = cursor.getColumnIndex(AccountsTable.NAME);
 		int currencyIdIndex = cursor.getColumnIndex(AccountsTable.CURRENCY);
+		int monthStartIndex = cursor.getColumnIndex(AccountsTable.MONTH_START);
 
 		cursor.moveToFirst();
 		while (!cursor.isAfterLast())
@@ -629,6 +641,7 @@ public final class CashLensStorage
 			account.id = cursor.getInt(idIndex);
 			account.name = cursor.getString(nameIndex);
 			account.currencyId = cursor.getInt(currencyIdIndex);
+			account.monthStartDay = cursor.getInt(monthStartIndex);
 
 			mAccounts.add(account);
 
@@ -644,6 +657,11 @@ public final class CashLensStorage
 	public ArrayAdapterIDAndName<Account> accountsAdapter(Context context)
 	{
 		return new ArrayAdapterIDAndName<Account>(context, mAccounts);
+	}
+	
+	public ArrayListWithNotify<Account> getAccounts()
+	{
+		return mAccounts;
 	}
 
 	protected void readCurrencies()
@@ -781,7 +799,8 @@ public final class CashLensStorage
 		
 		// also add it to loaded expenses, but don't notify listeners that data changed
 		// (must be done on UI thread and this function is called on a worker thread)
-		mExpenses.add(expense);
+		if (expenseMatchesFilters(expense))
+			mExpenses.add(expense);
 	}
 
 	public void saveExpense(Account account, int amount,
@@ -838,6 +857,9 @@ public final class CashLensStorage
 				expense.currencyCode() + expense.date.toLocaleString() + ", ID " + 
 				Integer.toString(expense.id));
 
+		if (!expenseMatchesFilters(expense))
+			mExpenses.remove(expense);	// expense no longer matches the WHERE clause; remove
+		
 		mExpenses.notifyDataChanged();
 	}
 
@@ -859,38 +881,65 @@ public final class CashLensStorage
 		mExpenses.notifyDataChanged();
 	}
 
-	public ArrayListWithNotify<Expense> readExpenses(Date startDate, Date endDate, int[] accountIds)
+	/**
+	 * @param startDate start date, or beginning if null
+	 * @param endDate end date, or now if null
+	 * @param accountID account to use, or all if null
+	 */
+	public static class ExpenseFilter
+	{
+		Date startDate;
+		Date endDate;
+		int accountId;
+	}
+	
+	public ArrayListWithNotify<Expense> readExpenses(ExpenseFilter[] filters)
 	{
 		// cache the retrieved expenses locally
 		mExpenses = new ArrayListWithNotify<Expense>();
 		mExpenses.setAutoNotify(false);	// notify will be called manually
 		
+		mExpenseFilters = filters;
+		
 		String cond = "";
+		boolean needOr = false;
 		
-		if (startDate != null)
-			cond = ExpensesTable.DATE + ">=" + dateToUTCInt(startDate);
-		
-		if (endDate != null)
+		if (filters != null)
 		{
-			if (cond.length() > 0)
-				cond += " AND ";
-			cond += ExpensesTable.DATE + "<" + dateToUTCInt(endDate);
-		}
-		
-		if (accountIds != null)
-		{
-			if (cond.length() > 0)
-				cond += " AND ";
-			
-			cond += "(";
-			for (int i=0; i<accountIds.length; ++i)
+			for (int i=0; i<filters.length; ++i)
 			{
-				cond += ExpensesTable.ACCOUNT + "=" + Integer.toString(accountIds[i]);
-				if (i+1 < accountIds.length)
-					cond += " OR ";
+				ExpenseFilter filter = filters[i];
+				String localCond = "";
+			
+				if (filter.startDate != null)
+					localCond = ExpensesTable.DATE + ">=" + dateToUTCInt(filter.startDate);
+				
+				if (filter.endDate != null)
+				{
+					if (localCond.length() > 0)
+						localCond += " AND ";
+					localCond += ExpensesTable.DATE + "<" + dateToUTCInt(filter.endDate);
+				}
+				
+				if (filter.accountId != 0)
+				{
+					if (localCond.length() > 0)
+						localCond += " AND ";
+					localCond += ExpensesTable.ACCOUNT + "=" + Integer.toString(filter.accountId);
+				}
+	
+				if (localCond.length() > 0)
+				{
+					if (needOr)
+						cond += " OR ";
+		
+					cond += "(" + localCond + ")";
+					needOr = true;
+				}
 			}
-			cond += ")";
 		}
+		
+		Log.d("readExpenses", "Filter is: " + cond);
 		
 		Cursor cursor = db().query(ExpensesTable.TABLE_NAME, null, cond,
 				null, null, null, ExpensesTable.DATE);
@@ -928,6 +977,37 @@ public final class CashLensStorage
 		return mExpenses;
 	}
 	
+	private boolean expenseMatchesFilters(Expense expense)
+	{
+		if (mExpenseFilters == null)
+			return true;	// no filters; everything matches
+		
+		for (int i=0; i<mExpenseFilters.length; ++i)
+		{
+			ExpenseFilter filter = mExpenseFilters[i];
+			
+			// if filter.accountId == 0, any account matches
+			if (filter.accountId != 0 && expense.accountId != filter.accountId)
+				continue;
+			
+			// if filter.startDate == null, any start date matches
+			if (filter.startDate != null && expense.date.compareTo(filter.startDate) < 0)
+				continue;
+			
+			// if filter.endDate == null, any end date matches
+			if (filter.endDate != null && expense.date.compareTo(filter.endDate) >= 0)
+				continue;
+			
+			// we have a match !
+			return true;
+		}
+		
+		Log.d("expenseMatchesFilters", "expense with id " + Integer.toString(expense.id) +
+				" doesn't match current filters");
+		
+		return false;
+	}
+	
 	public void notifyExpensesChanged()
 	{
 		mExpenses.notifyDataChanged();
@@ -938,6 +1018,7 @@ public final class CashLensStorage
 		ContentValues values = new ContentValues();
 		values.put(AccountsTable.NAME, account.name);
 		values.put(AccountsTable.CURRENCY, account.currencyId);
+		values.put(AccountsTable.MONTH_START, account.monthStartDay);
 		
 		long id = (int) db().insert(AccountsTable.TABLE_NAME, null, values);
 
