@@ -4,9 +4,13 @@
 package com.udesign.cashlens;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 
+import com.udesign.cashlens.CashLensStorage.Account;
 import com.udesign.cashlens.CashLensStorage.Expense;
+import com.udesign.cashlens.CashLensStorage.ExpenseFilter;
 
 import android.content.Context;
 import android.util.AttributeSet;
@@ -16,22 +20,26 @@ import android.widget.ListView;
  * @author sorin
  *
  */
-public class ExpensesView extends ListView
+public final class ExpensesView extends ListView
 {
-	private Date mStartDate = null;
-	private Date mEndDate = null;
-	private int[] mAccountsFilter = null;
-	private ArrayListWithNotify<Expense> mExpenses = null;
-	private CashLensStorage mStorage = null;
+	private ExpenseFilter[] mFilters;
+	private FilterType mFilterType;
+	private ArrayListWithNotify<Expense> mExpenses;
+	private CashLensStorage mStorage;
+	
+	public static enum FilterType
+	{
+		NONE, DAY, MONTH, CUSTOM		
+	}
 	
 	/**
 	 * @param context
 	 * @throws IOException 
 	 */
 	public ExpensesView(Context context) throws IOException
-		{
-			super(context);
-		}
+	{
+		super(context);
+	}
 
 	/**
 	 * @param context
@@ -39,9 +47,9 @@ public class ExpensesView extends ListView
 	 * @throws IOException 
 	 */
 	public ExpensesView(Context context, AttributeSet attrs) throws IOException
-		{
-			super(context, attrs);
-		}
+	{
+		super(context, attrs);
+	}
 
 	/**
 	 * @param context
@@ -50,27 +58,76 @@ public class ExpensesView extends ListView
 	 * @throws IOException 
 	 */
 	public ExpensesView(Context context, AttributeSet attrs, int defStyle) throws IOException
-		{
-			super(context, attrs, defStyle);
-		}
+	{
+		super(context, attrs, defStyle);
+	}
 	
 	public void initialize() throws IOException
 	{
 		mStorage = CashLensStorage.instance(getContext().getApplicationContext());
+
+		AppSettings settings = AppSettings.instance(getContext().getApplicationContext());
+		
+		FilterType filterType = settings.getExpenseFilterType();
+		if (filterType == FilterType.CUSTOM)
+			setCustomFilter(settings.getLastUsedCustomExpenseFilter());
+		else
+			setFilterType(settings.getExpenseFilterType());
 	}
 
-	/**
-	 * @param startDate start date, or beginning if null
-	 * @param endDate end date, or now if null
-	 * @param accountIDs list of accounts to use, or all if null
-	 */
-	public void setFilter(Date startDate, Date endDate, int[] accountIDs)
+	public void setFilterType(FilterType filterType)
 	{
-		mStartDate = startDate;
-		mEndDate = endDate;
-		mAccountsFilter = accountIDs;
+		mFilterType = filterType;
 		
-		// Re-read expenses
+		if (filterType == FilterType.CUSTOM)
+			mFilters = null;	// should be followed by a call to setCustomFilter()
+		else
+		{
+			recomputeFilters();
+			updateExpenses();
+		}
+	}
+	
+	protected void recomputeFilters()
+	{
+		Calendar cal = Calendar.getInstance();
+		ArrayList<Account> accounts = mStorage.getAccounts();
+		Date now = cal.getTime();
+		
+		switch (mFilterType)
+		{
+		case NONE:
+			mFilters = null;
+			break;
+		case CUSTOM:	// applied in setCustomFilter
+			break;
+		case DAY:
+			mFilters = new ExpenseFilter[1];
+			mFilters[0] = new ExpenseFilter();
+			mFilters[0].startDate = CashLensUtils.startOfDay(now);
+			break;
+		case MONTH:
+			mFilters = new ExpenseFilter[accounts.size()];
+			for (int i=0; i<mFilters.length; ++i)
+			{
+				ExpenseFilter filter = new ExpenseFilter();
+				Account account = accounts.get(i);
+				
+				filter.accountId = account.id;
+				filter.startDate = CashLensUtils.startOfThisMonth(account.monthStartDay); 
+				filter.endDate = CashLensUtils.endOfThisMonth(account.monthStartDay);
+				
+				mFilters[i] = filter;
+			}
+			break;
+		}
+	}
+
+	public void setCustomFilter(ExpenseFilter filter)
+	{
+		mFilters = new ExpenseFilter[1];
+		mFilters[0] = filter;
+		
 		updateExpenses();
 	}
 	
@@ -90,7 +147,7 @@ public class ExpensesView extends ListView
 	
 	protected void updateExpenses()
 	{
-		mExpenses = mStorage.readExpenses(mStartDate, mEndDate, mAccountsFilter);
+		mExpenses = mStorage.readExpenses(mFilters);
 		
 		ArrayAdapterExpense adapter = new ArrayAdapterExpense(getContext(), mExpenses);
 		setAdapter(adapter);
