@@ -34,4 +34,10 @@
     <string name="currency">Currency</string>
     <string name="total">Total</string>
     <string name="no_expenses">No expenses.</string>
+    <string name="month_start">Month start day</string>
+    <string name="name">Name</string>
+    <string name="no_filter">No filter</string>
+    <string name="current_day">Current day</string>
+    <string name="current_month">Current month</string>
+    <string name="custom_interval">Custom interval</string>
 </resources>
