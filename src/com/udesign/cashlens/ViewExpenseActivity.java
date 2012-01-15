@@ -27,7 +27,7 @@ import android.widget.Toast;
  * @author sorin
  *
  */
-public class ViewExpenseActivity extends Activity
+public final class ViewExpenseActivity extends Activity
 {
 	protected CashLensStorage mStorage = null;
 	protected Expense mExpense = null;
@@ -85,18 +85,8 @@ public class ViewExpenseActivity extends Activity
 			
 			mImageView.setImageBitmap(mImage);
 		}
-		
-		DateFormat df = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
-		
-		String html = "<b>" + df.format(mExpense.date) + "</b>" +  "<br />";
-		if (mExpense.description != null)
-			html += mExpense.description + "<br />";
-		
-        html += mExpense.amountToString() + " " + mExpense.currencyCode() + ", " 
-        	+ mExpense.accountName();
 
-        // formatted text
-		mText.setText(Html.fromHtml(html));
+		setExpenseText();
 	}
 
 	/* (non-Javadoc)
@@ -148,7 +138,7 @@ public class ViewExpenseActivity extends Activity
 			Intent myIntent = new Intent(this,
 					EditExpenseActivity.class);
 			myIntent.putExtra("expense_id", (int)mExpense.id);
-			startActivity(myIntent);
+			startActivityForResult(myIntent, 0);
 	        return true;
 	        
 	    case R.id.delExpense:
@@ -195,5 +185,31 @@ public class ViewExpenseActivity extends Activity
 		{
 			e.printStackTrace();
 		}
+	}
+	
+	private void setExpenseText()
+	{
+		DateFormat df = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
+		
+		String html = "<b>" + df.format(mExpense.date) + "</b>" +  "<br />";
+		if (mExpense.description != null)
+			html += mExpense.description + "<br />";
+		
+        html += mExpense.amountToString() + " " + mExpense.currencyCode() + ", " 
+        	+ mExpense.accountName();
+
+        // formatted text
+		mText.setText(Html.fromHtml(html));
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onActivityResult(int, int, android.content.Intent)
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
+		super.onActivityResult(requestCode, resultCode, data);
+		
+		setExpenseText();	// update expense text
 	}
 }
