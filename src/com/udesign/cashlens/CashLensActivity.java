@@ -71,8 +71,6 @@ public final class CashLensActivity extends Activity
 			}
 		});
 		
-		mExpenses.setFilter(null, null, null);
-		
 		mExpenses.setOnHierarchyChangeListener(new OnHierarchyChangeListener()
 		{
 			public void onChildViewRemoved(View parent, View child)
@@ -85,7 +83,8 @@ public final class CashLensActivity extends Activity
 				updateViewIfNoExpenses();
 			}
 		});
-		
+
+		updateTitle();
 		updateViewIfNoExpenses();
 	}
 
@@ -138,5 +137,30 @@ public final class CashLensActivity extends Activity
 			mNoExpensesText.setVisibility(View.INVISIBLE);
 			mExpenses.setVisibility(View.VISIBLE);
 		}
+	}
+	
+	private void updateTitle()
+	{
+		AppSettings settings = AppSettings.instance(getApplicationContext());
+		String filterType = "";
+		
+		switch (settings.getExpenseFilterType())
+		{
+		case NONE:
+			filterType = getResources().getString(R.string.no_filter);
+			break;
+		case CUSTOM:
+			filterType = getResources().getString(R.string.custom_interval);
+			break;
+		case DAY:
+			filterType = getResources().getString(R.string.current_day);
+			break;
+		case MONTH:
+			filterType = getResources().getString(R.string.current_month);
+			break;
+		}
+		
+		setTitle(getResources().getString(R.string.app_name) + 
+				" (" + filterType + ")");
 	}
 }
