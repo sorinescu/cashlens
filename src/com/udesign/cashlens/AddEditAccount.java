@@ -9,6 +9,7 @@ import com.udesign.cashlens.CashLensStorage.Account;
 import com.udesign.cashlens.CashLensStorage.Currency;
 
 import android.app.Activity;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -33,6 +34,7 @@ public final class AddEditAccount extends Activity
 	private Button mDiscardButton;
 	private EditText mAccountTxt;
 	private Spinner mCurrencySpinner;
+	private EditText mMonthStartTxt;
 	private ArrayAdapterIDAndName<Currency> mCurrenciesAdapter;
 	
 	/* (non-Javadoc)
@@ -61,6 +63,7 @@ public final class AddEditAccount extends Activity
 		mDiscardButton = (Button)findViewById(R.id.btnDiscard);
 		mAccountTxt = (EditText)findViewById(R.id.accountTxt);
 		mCurrencySpinner = (Spinner)findViewById(R.id.spinCurrency);
+		mMonthStartTxt = (EditText)findViewById(R.id.monthStartTxt);
 		
 		mSaveButton.setOnClickListener(new OnClickListener()
 		{
@@ -83,6 +86,7 @@ public final class AddEditAccount extends Activity
 
 					mAccount.currencyId = currency.id;
 					mAccount.name = mAccountTxt.getText().toString();
+					mAccount.monthStartDay = Integer.parseInt(mMonthStartTxt.getText().toString());
 					Log.d("AddEditAccount", "account name is " + mAccount.name);
 
 					mStorage.addAccount(mAccount);
@@ -122,6 +126,46 @@ public final class AddEditAccount extends Activity
 			}
 		});
 		
+		mMonthStartTxt.setRawInputType(Configuration.KEYBOARD_12KEY);	// phone keypad
+		mMonthStartTxt.addTextChangedListener(new TextWatcher()
+		{
+			private String origTxt;
+			private boolean recursive;
+			
+			public void onTextChanged(CharSequence s, int start, int before, int count)
+			{
+			}
+			
+			public void beforeTextChanged(CharSequence s, int start, int count,
+					int after)
+			{
+				if (!recursive)
+					origTxt = mMonthStartTxt.getText().toString();
+			}
+			
+			public void afterTextChanged(Editable s)
+			{
+				if (recursive)
+					return;
+				
+		        String temp = s.toString();
+		        
+		        // must be between 1 and 31
+		        if (temp.length() > 0)
+		        {
+		        	int day = Integer.parseInt(temp);
+		        	if (day < 1 || day > 31)
+		        	{
+		        		recursive = true;
+		        		s.replace(0, temp.length(), origTxt);
+		        		recursive = false;
+		        	}
+		        }
+		        
+		        updateSaveEnabled();
+			}
+		});
+		
 		mCurrenciesAdapter = mStorage.currenciesAdapter(this);
 		if (mCurrenciesAdapter.isEmpty())
 		{
@@ -143,7 +187,8 @@ public final class AddEditAccount extends Activity
 	{
 		boolean enabled = 
 			mCurrencySpinner.getSelectedItemId() != AdapterView.INVALID_ROW_ID &&
-			mAccountTxt.getText().toString().length() > 0;
+			mAccountTxt.getText().toString().length() > 0 &&
+			mMonthStartTxt.getText().toString().length() > 0;
 
 		mSaveButton.setEnabled(enabled);
 	}
