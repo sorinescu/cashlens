@@ -904,8 +904,13 @@ public final class CashLensStorage
 	public ArrayListWithNotify<Expense> readExpenses(ExpenseFilter[] filters)
 	{
 		// cache the retrieved expenses locally
-		mExpenses = new ArrayListWithNotify<Expense>();
-		mExpenses.setAutoNotify(false);	// notify will be called manually
+		if (mExpenses == null)
+		{
+			mExpenses = new ArrayListWithNotify<Expense>();
+			mExpenses.setAutoNotify(false);	// notify will be called manually
+		}
+		else
+			mExpenses.clear();
 		
 		mExpenseFilters = filters;
 		
@@ -1052,12 +1057,20 @@ public final class CashLensStorage
 			throw new IOException("Deleted " + Integer.toString(affected)
 					+ " items instead of 1 from " + AccountsTable.TABLE_NAME);
 
+		affected = db().delete(ExpensesTable.TABLE_NAME, 
+				ExpensesTable.ACCOUNT + "=" + Integer.toString(account.id), null);
+		
 		Log.w("deleteAccount", "Deleted account: " + account.name + ", ID "
-				+ Integer.toString(account.id));
+				+ Integer.toString(account.id) + " and " + Integer.toString(affected)
+				+ " expenses belonging to it");
 
 		// Also remove from accounts list
 		mAccounts.remove(account);
 		mAccounts.notifyDataChanged();
+		
+		// Re-read expenses and notify listeners
+		readExpenses(mExpenseFilters);
+		mExpenses.notifyDataChanged();
 	}
 	
 	protected int saveExpenseThumbnail(ExpenseThumbnail.Data thumbData) throws IOException
