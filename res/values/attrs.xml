@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+     <declare-styleable name="SeekBarPreference"> 
+         <attr name="min" format="integer" min="0" />
+         <attr name="units" format="string" localization="suggested" />
+     </declare-styleable>
+</resources>
