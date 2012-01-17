@@ -24,32 +24,57 @@ import com.udesign.cashlens.CashLensStorage.ExpenseFilter;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 
 final class AppSettings
 {
 	private static AppSettings mInstance = null;
 	
-	private int lastUsedCurrency;
-	private int lastUsedAccount;
-	private ExpenseFilter lastUsedCustomExpenseFilter;
-	private ExpensesView.FilterType expenseFilterType;
-	
 	private SharedPreferences mSharedPrefs;
+	
+	public static class PictureSize
+	{
+		private int width;
+		private int height;
+		
+		PictureSize(int width, int height)
+		{
+			this.width = width;
+			this.height = height;
+		}
+		
+		int width()
+		{
+			return width;
+		}
+		
+		int height()
+		{
+			return height;
+		}
+		
+		public String toString()
+		{
+			return Integer.toString(width) + " x " + Integer.toString(height);
+		}
+		
+		public static PictureSize parseString(String str)
+		{
+			int width, height;
+			
+			String[] res = str.split(" x ");
+			width = Integer.parseInt(res[0]);
+			height = Integer.parseInt(res[1]);
+			
+			return new PictureSize(width, height);
+		}
+	}
 	
 	private AppSettings(Context context)
 	{
-		mSharedPrefs = context.getSharedPreferences("CashLensSharedPrefs", 0);
-		
-		lastUsedCurrency = mSharedPrefs.getInt("lastUsedCurrency", -1);
-		lastUsedAccount = mSharedPrefs.getInt("lastUsedAccount", -1);
-		
-		lastUsedCustomExpenseFilter = new ExpenseFilter();
-		lastUsedCustomExpenseFilter.startDate = getDate("lastUsedCustomExpenseFilterStart");
-		lastUsedCustomExpenseFilter.endDate = getDate("lastUsedCustomExpenseFilterEnd");
-		lastUsedCustomExpenseFilter.accountId = mSharedPrefs.getInt("lastUsedCustomExpenseFilterAccount", 0);
-		
-		int ordinal = mSharedPrefs.getInt("expenseFilterType", ExpensesView.FilterType.MONTH.ordinal());
-		expenseFilterType = ExpensesView.FilterType.values()[ordinal];
+//		Log.d("AppSettings", "creating AppSettings");
+		mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(
+				context.getApplicationContext());
 	}
 	
 	private Date getDate(String fieldName)
@@ -97,14 +122,13 @@ final class AppSettings
 	 */
 	public int getLastUsedCurrency()
 	{
-		return lastUsedCurrency;
+		return mSharedPrefs.getInt("lastUsedCurrency", -1);
 	}
 	/**
 	 * @param lastUsedCurrency the lastUsedCurrency to set
 	 */
-	public void setLastUsedCurrency(int aLastUsedCurrency)
+	public void setLastUsedCurrency(int lastUsedCurrency)
 	{
-		lastUsedCurrency = aLastUsedCurrency;
 		mSharedPrefs.edit().putInt("lastUsedCurrency", lastUsedCurrency);
 		mSharedPrefs.edit().commit();
 	}
@@ -113,14 +137,13 @@ final class AppSettings
 	 */
 	public int getLastUsedAccount()
 	{
-		return lastUsedAccount;
+		return mSharedPrefs.getInt("lastUsedAccount", -1);
 	}
 	/**
 	 * @param lastUsedAccount the lastUsedAccount to set
 	 */
-	public void setLastUsedAccount(int aLastUsedAccount)
+	public void setLastUsedAccount(int lastUsedAccount)
 	{
-		lastUsedAccount = aLastUsedAccount;
 		mSharedPrefs.edit().putInt("lastUsedAccount", lastUsedAccount);
 		mSharedPrefs.edit().commit();
 	}
@@ -129,14 +152,14 @@ final class AppSettings
 	 */
 	public ExpensesView.FilterType getExpenseFilterType()
 	{
-		return expenseFilterType;
+		int ordinal = mSharedPrefs.getInt("expenseFilterType", ExpensesView.FilterType.MONTH.ordinal());
+		return ExpensesView.FilterType.values()[ordinal];
 	}
 	/**
 	 * @param filterType the expenseFilterType to set
 	 */
 	public void setExpenseFilterType(ExpensesView.FilterType filterType)
 	{
-		expenseFilterType = filterType;
 		mSharedPrefs.edit().putInt("expenseFilterType", filterType.ordinal());
 		mSharedPrefs.edit().commit();
 	}
@@ -145,17 +168,61 @@ final class AppSettings
 	 */
 	public ExpenseFilter getLastUsedCustomExpenseFilter()
 	{
-		return lastUsedCustomExpenseFilter;
+		ExpenseFilter filter = new ExpenseFilter();
+		filter.startDate = getDate("lastUsedCustomExpenseFilterStart");
+		filter.endDate = getDate("lastUsedCustomExpenseFilterEnd");
+		filter.accountId = mSharedPrefs.getInt("lastUsedCustomExpenseFilterAccount", 0);
+		
+		return filter;
 	}
 	/**
 	 * @param filter the lastUsedCustomExpenseFilter to set
 	 */
 	public void setLastUsedCustomExpenseFilter(ExpenseFilter filter)
 	{
-		lastUsedCustomExpenseFilter = filter;
 		putDate("lastUsedCustomExpenseFilterStart", filter.startDate);
 		putDate("lastUsedCustomExpenseFilterEnd", filter.endDate);
 		mSharedPrefs.edit().putInt("lastUsedCustomExpenseFilterAccount", filter.accountId);
+		mSharedPrefs.edit().commit();
+	}
+
+	/**
+	 * @return the jpegQuality
+	 */
+	public int getJpegQuality()
+	{
+		return mSharedPrefs.getInt("jpegQuality", 75);
+	}
+
+	/**
+	 * @param jpegQuality the jpegQuality to set
+	 */
+	public void setJpegQuality(int jpegQuality)
+	{
+		mSharedPrefs.edit().putInt("jpegQuality", jpegQuality);
+		mSharedPrefs.edit().commit();
+	}
+	
+	/**
+	 * @return the jpegPictureSize
+	 */
+	public PictureSize getJpegPictureSize()
+	{
+		String str = mSharedPrefs.getString("jpegPictureSize", "0 x 0");
+//		Log.d("getJpegPictureSize", "got from prefs: " + str);
+		PictureSize picSize = PictureSize.parseString(str);
+//		Log.d("getJpegPictureSize", "parsed: " + picSize.toString());
+		
+		return picSize;
+	}
+
+	/**
+	 * @param jpegPictureSize the jpegPictureSize to set
+	 */
+	public void setJpegPictureSize(PictureSize jpegPictureSize)
+	{
+//		Log.d("setJpegPictureSize", jpegPictureSize.toString());
+		mSharedPrefs.edit().putString("jpegPictureSize", jpegPictureSize.toString());
 		mSharedPrefs.edit().commit();
 	}
 }
