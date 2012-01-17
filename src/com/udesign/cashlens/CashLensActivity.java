@@ -126,13 +126,15 @@ public final class CashLensActivity extends Activity
 	    switch (item.getItemId()) 
 	    {
 	    case R.id.manage_accounts:
-			Intent myIntent = new Intent(CashLensActivity.this,
+			Intent manageAccounts = new Intent(CashLensActivity.this,
 					AccountsActivity.class);
-			startActivity(myIntent);
+			startActivity(manageAccounts);
 	        return true;
 	        
 	    case R.id.settings:
-	    	// TODO implement
+			Intent settings = new Intent(CashLensActivity.this,
+					SettingsActivity.class);
+			startActivity(settings);
 	        return true;
 	        
 	    default:
