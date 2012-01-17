@@ -473,6 +473,16 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	    			" in portrait mode via Android 2.1 interface (buggy)");
 	        parameters.setRotation(mPictureRotation);
 	        
+	        // Set JPEG quality and size from app settings
+			AppSettings settings = AppSettings.instance(getApplicationContext());
+	        AppSettings.PictureSize picSize = settings.getJpegPictureSize();
+
+	        parameters.setJpegQuality(settings.getJpegQuality());
+	        parameters.setPictureSize(picSize.width(), picSize.height());
+
+	    	Log.w("takePicture", "setting picture quality " + Integer.toString(parameters.getJpegQuality()) + 
+				", size " + picSize.toString());
+	    	
 	        try
 	        {
 	        	mCamera.setParameters(parameters);
