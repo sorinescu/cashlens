@@ -160,7 +160,7 @@ public class AccountsActivity extends Activity
 		AlertDialog.Builder alert = new AlertDialog.Builder(this);
 		
 		alert.setTitle(getString(R.string.delete_account) + ": " + mSelectedAccount.name);
-		alert.setMessage(getString(R.string.are_you_sure));
+		alert.setMessage(getString(R.string.delete_account_are_you_sure));
 
 		alert.setPositiveButton(getString(android.R.string.yes), new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int whichButton) {
