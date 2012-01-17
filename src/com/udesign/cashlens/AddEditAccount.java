@@ -134,6 +134,7 @@ public final class AddEditAccount extends Activity
 			}
 		});
 		
+		mMonthStartTxt.setText("1");
 		mMonthStartTxt.setRawInputType(Configuration.KEYBOARD_12KEY);	// phone keypad
 		mMonthStartTxt.addTextChangedListener(new TextWatcher()
 		{
