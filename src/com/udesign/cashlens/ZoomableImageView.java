@@ -26,7 +26,6 @@ import android.graphics.Matrix;
 import android.graphics.PointF;
 import android.os.Handler;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -100,7 +99,7 @@ public class ZoomableImageView extends ImageView {
 				{
 					float scale;
 					
-					Log.d("ZoomableImageView", "onZoom" + (zoomIn ? "In" : "Out"));
+//					Log.d("ZoomableImageView", "onZoom" + (zoomIn ? "In" : "Out"));
 					
 					if (zoomIn)
 						scale = 1.1f;
@@ -124,7 +123,7 @@ public class ZoomableImageView extends ImageView {
 	    	
 	    	ViewGroup zoomContainer = mZoomButtons.getContainer();
 
-			Log.d("ZoomableImageView", "parent class is " + parent.getClass().toString());
+//			Log.d("ZoomableImageView", "parent class is " + parent.getClass().toString());
 
 			// Move zoom controls to bottom right, if possible
 	    	if (parent instanceof LinearLayout)
@@ -212,8 +211,8 @@ public class ZoomableImageView extends ImageView {
     
     protected void zoom(float scaleFactor)
     {
-		Log.d("ZoomableImageView", "zoom(" + Float.toString(scaleFactor) + "); center=" + 
-				Float.toString(scaleCenter.x) + "," + Float.toString(scaleCenter.y));
+//		Log.d("ZoomableImageView", "zoom(" + Float.toString(scaleFactor) + "); center=" + 
+//				Float.toString(scaleCenter.x) + "," + Float.toString(scaleCenter.y));
 		
 	 	float origScale = saveScale;
         saveScale *= scaleFactor;
