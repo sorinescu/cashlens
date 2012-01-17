@@ -40,4 +40,5 @@
     <string name="current_day">Current day</string>
     <string name="current_month">Current month</string>
     <string name="custom_interval">Custom interval</string>
+    <string name="delete_account_are_you_sure">All expenses belonging to this account will be deleted !\nAre you sure ?</string>
 </resources>
