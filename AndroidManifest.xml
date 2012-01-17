@@ -45,6 +45,10 @@
             android:label="@string/edit_expense"
             android:name=".EditExpenseActivity" >
         </activity>
+        <activity
+            android:label="@string/settings"
+            android:name=".SettingsActivity" >
+        </activity>
         </application>
 
 </manifest>

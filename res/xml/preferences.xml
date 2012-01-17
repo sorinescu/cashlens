@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:udesign="http://schemas.android.com/apk/res/com.udesign.cashlens" >
+    
+    <PreferenceScreen
+        android:key="jpegParams"
+        android:title="Snapshot parameters" >
+
+        <com.udesign.cashlens.SeekBarPreference 
+            android:key="jpegQuality" 
+            android:title="JPEG quality"
+            udesign:min="10"
+            android:max="100"
+            android:defaultValue="75" />
+        
+        <ListPreference
+            android:key="jpegPictureSize"
+            android:title="Picture size" />
+            
+    </PreferenceScreen>
+
+    
+
+</PreferenceScreen>
