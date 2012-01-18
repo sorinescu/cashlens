@@ -899,20 +899,76 @@ public final class CashLensStorage
 		Date startDate;
 		Date endDate;
 		int accountId;
+
+		/* (non-Javadoc)
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ExpenseFilter other = (ExpenseFilter) obj;
+			if (accountId != other.accountId)
+				return false;
+			if (endDate == null) {
+				if (other.endDate != null)
+					return false;
+			} else if (!endDate.equals(other.endDate))
+				return false;
+			if (startDate == null) {
+				if (other.startDate != null)
+					return false;
+			} else if (!startDate.equals(other.startDate))
+				return false;
+			return true;
+		}
+	}
+	
+	private boolean expenseFiltersEqual(ExpenseFilter[] filters)
+	{
+		if (filters == null || mExpenseFilters == null)
+			return filters == mExpenseFilters;	// true if both are null
+		else if (filters.length != mExpenseFilters.length)
+			return true;
+		else
+		{
+			for (int i=0; i<filters.length; ++i)
+				if (!filters[i].equals(mExpenseFilters[i]))
+					return false;
+		}
+		
+		return true;
 	}
 	
 	public ArrayListWithNotify<Expense> readExpenses(ExpenseFilter[] filters)
 	{
+		boolean needToRead = false;		// don't reread expenses if filters didn't change
+		
 		// cache the retrieved expenses locally
 		if (mExpenses == null)
 		{
 			mExpenses = new ArrayListWithNotify<Expense>();
 			mExpenses.setAutoNotify(false);	// notify will be called manually
+			
+			needToRead = true;	// first call; read
 		}
-		else
-			mExpenses.clear();
 		
-		mExpenseFilters = filters;
+		// did the filters change ?
+		if (!expenseFiltersEqual(filters))
+		{
+			mExpenseFilters = filters;
+			needToRead = true; 
+		}
+		
+		if (!needToRead)
+		{
+			Log.d("readExpenses", "return cached expenses");
+			return mExpenses;	// return cached copy; should be the same
+		}
 		
 		String cond = "";
 		boolean needOr = false;
@@ -952,7 +1008,9 @@ public final class CashLensStorage
 			}
 		}
 		
-		Log.d("readExpenses", "Filter is: " + cond);
+		mExpenses.clear();
+		
+		Log.d("readExpenses", "Doing read; filter is: " + cond);
 		
 		Cursor cursor = db().query(ExpensesTable.TABLE_NAME, null, cond,
 				null, null, null, ExpensesTable.DATE);
