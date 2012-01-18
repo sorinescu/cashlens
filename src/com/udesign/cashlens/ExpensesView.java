@@ -133,6 +133,7 @@ public final class ExpensesView extends ListView
 
 	public void setCustomFilter(ExpenseFilter filter)
 	{
+		mFilterType = FilterType.CUSTOM;
 		mFilters = new ExpenseFilter[1];
 		mFilters[0] = filter;
 		
