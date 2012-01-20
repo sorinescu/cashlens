@@ -31,9 +31,11 @@ import android.preference.PreferenceManager;
 public final class SettingsActivity extends PreferenceActivity
 	implements OnSharedPreferenceChangeListener
 {
-	private Preference mJpegParams;
 	private Preference mJpegQuality;
 	private ListPreference mJpegPictureSize;
+	//private CheckBoxPreference mMonthViewEnabled;
+	//private CheckBoxPreference mDayViewEnabled;
+	//private CheckBoxPreference mCustomViewEnabled;
 	
 	/* (non-Javadoc)
 	 * @see android.preference.PreferenceActivity#onCreate(android.os.Bundle)
@@ -44,31 +46,22 @@ public final class SettingsActivity extends PreferenceActivity
 		super.onCreate(savedInstanceState);
 		addPreferencesFromResource(R.xml.preferences);
 		
-		mJpegParams = findPreference("jpegParams");
 		mJpegQuality = findPreference("jpegQuality");
 		mJpegPictureSize = (ListPreference)findPreference("jpegPictureSize");
+		
+		//mMonthViewEnabled = (CheckBoxPreference)findPreference("expenseFilterMonthEnabled");
+		//mDayViewEnabled = (CheckBoxPreference)findPreference("expenseFilterDayEnabled");
+		//mCustomViewEnabled = (CheckBoxPreference)findPreference("expenseFilterCustomEnabled");
 		
 		populateJpegPictureSize();
 	}
 	
-	private void updateSummaries(boolean mainScreen)
+	private void updateSummaries()
 	{
 		AppSettings settings = AppSettings.instance(getApplicationContext());
 		
-		if (mainScreen)
-		{
-			mJpegParams.setSummary("Quality: " + settings.getJpegQuality() +
-					"; " + "Size: " + settings.getJpegPictureSize().toString());
-			
-			// Android doesn't update its views after setSummary; must do it manually
-			// See http://code.google.com/p/android/issues/detail?id=931
-			onContentChanged();
-		}
-		else
-		{
-			mJpegQuality.setSummary(Integer.toString(settings.getJpegQuality()));
-			mJpegPictureSize.setSummary(settings.getJpegPictureSize().toString());
-		}
+		mJpegQuality.setSummary(Integer.toString(settings.getJpegQuality()));
+		mJpegPictureSize.setSummary(settings.getJpegPictureSize().toString());
 	}
 	
 	private void populateJpegPictureSize()
@@ -110,9 +103,7 @@ public final class SettingsActivity extends PreferenceActivity
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus)
 	{
-		// If hasFocus, update main screen preferences, 
-		// otherwise secondary screen preferences
-		updateSummaries(hasFocus);
+		updateSummaries();
 	
 		super.onWindowFocusChanged(hasFocus);
 	}
@@ -148,6 +139,6 @@ public final class SettingsActivity extends PreferenceActivity
 	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
 			String key)
 	{
-		updateSummaries(false);
+		updateSummaries();
 	}
 }
