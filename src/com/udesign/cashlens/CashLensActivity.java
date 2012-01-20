@@ -15,26 +15,48 @@
  ******************************************************************************/
 package com.udesign.cashlens;
 
+import java.io.IOException;
+
+import com.udesign.cashlens.ExpensesView.FilterType;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup.LayoutParams;
 import android.view.ViewGroup.OnHierarchyChangeListener;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewFlipper;
 import android.widget.AdapterView.OnItemClickListener;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 
 public final class CashLensActivity extends Activity
 {
 	private Button mAddExpenseBtn;
-	private ExpensesView mExpenses; 
-	private TextView mNoExpensesText;
+	private ViewFlipper mFlipExpenses;
+	private GestureDetector mGestureDetector;
+	private Animation mSlideLeftIn;
+	private Animation mSlideLeftOut;
+	private Animation mSlideRightIn;
+    private Animation mSlideRightOut;
+    private View.OnTouchListener mOnTouchListener;
+
+    private static final int SWIPE_MIN_DISTANCE = 120;
+    private static final int SWIPE_MAX_OFF_PATH = 250;
+	private static final int SWIPE_THRESHOLD_VELOCITY = 200;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -44,22 +66,48 @@ public final class CashLensActivity extends Activity
 		setContentView(R.layout.main);
 
 		mAddExpenseBtn = (Button)findViewById(R.id.addExpense);
-		mExpenses = (ExpensesView)findViewById(R.id.expensesLst);
-		mNoExpensesText = (TextView)findViewById(android.R.id.text1);
+		mFlipExpenses = (ViewFlipper)findViewById(R.id.expensesFlip);
 		
-		// this can generate an IOException during the initialization of ExpensesView
-		// which is typically caused by a missing SD card
-		try
-		{
-			mExpenses.initialize();
-		}
-		catch (Exception e)
-		{
-			Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
-			finish();	// exit app
-			return;
-		}
+        mSlideLeftIn = AnimationUtils.loadAnimation(this, R.anim.slide_left_in);
+        mSlideLeftOut = AnimationUtils.loadAnimation(this, R.anim.slide_left_out);
+        mSlideRightIn = AnimationUtils.loadAnimation(this, R.anim.slide_right_in);
+        mSlideRightOut = AnimationUtils.loadAnimation(this, R.anim.slide_right_out);
+		
+		mGestureDetector = new GestureDetector(new SimpleOnGestureListener() {
+			/* (non-Javadoc)
+			 * @see android.view.GestureDetector.SimpleOnGestureListener#onFling(android.view.MotionEvent, android.view.MotionEvent, float, float)
+			 */
+			@Override
+			public boolean onFling(MotionEvent e1, MotionEvent e2,
+					float velocityX, float velocityY) 
+			{
+	            try 
+	            {
+	                if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH)
+	                    return false;
+	                
+	                // right to left swipe
+	                if(e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
+	                	mFlipExpenses.setInAnimation(mSlideLeftIn);
+	                	mFlipExpenses.setOutAnimation(mSlideLeftOut);
+	                	mFlipExpenses.showNext();
+	                }  else if (e2.getX() - e1.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
+	                	mFlipExpenses.setInAnimation(mSlideRightIn);
+	                	mFlipExpenses.setOutAnimation(mSlideRightOut);
+	                	mFlipExpenses.showPrevious();
+	                }
+	                
+	                updateCurrentExpensesView();
+	            } 
+	            catch (Exception e) 
+	            {
+	                // nothing
+	            }
 
+	            return true;
+			}
+		});
+		
 		mAddExpenseBtn.setOnClickListener(new Button.OnClickListener()
 		{
 			public void onClick(View v)
@@ -70,7 +118,23 @@ public final class CashLensActivity extends Activity
 			}
 		});
 		
-		mExpenses.setOnItemClickListener(new OnItemClickListener()
+		// This will be used for all expense views and "No expenses" texts
+		mOnTouchListener = new View.OnTouchListener() 
+		{
+			public boolean onTouch(View v, MotionEvent event) 
+			{
+				// let the activity handle the event
+				return onTouchEvent(event);
+			}
+		};
+	}
+	
+	private void initializeExpenses() throws IOException
+	{
+		AppSettings settings = AppSettings.instance(getApplicationContext());
+		
+		// These listeners will be applied to all expense views
+		OnItemClickListener onItemClickListener = new OnItemClickListener()
 		{
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id)
 			{
@@ -84,9 +148,9 @@ public final class CashLensActivity extends Activity
 				
 				startActivity(myIntent);
 			}
-		});
+		};
 		
-		mExpenses.setOnHierarchyChangeListener(new OnHierarchyChangeListener()
+		OnHierarchyChangeListener onHierarchyChangeListener = new OnHierarchyChangeListener()
 		{
 			public void onChildViewRemoved(View parent, View child)
 			{
@@ -97,12 +161,93 @@ public final class CashLensActivity extends Activity
 			{
 				updateViewIfNoExpenses();
 			}
-		});
+		};
+		
+		FilterType currentFilter = settings.getExpenseFilterType();
 
-		updateTitle();
-		updateViewIfNoExpenses();
+		mFlipExpenses.removeAllViews();
+		
+		for (int i=0; i<FilterType.values().length; ++i)
+		{
+			FilterType filterType = FilterType.values()[i];
+			
+			if (filterType == FilterType.NONE)
+				continue;	// ignore empty filter
+			
+			if (!settings.getExpenseFilterViewEnabled(filterType))
+				continue;	// don't show disabled views
+			
+			ExpensesView expenses = new ExpensesView(this);
+			
+			// When there are no expenses to display, show "No expenses" instead of an empty list
+			RelativeLayout layout = new RelativeLayout(this);
+			layout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+			
+			TextView noExpensesText = new TextView(this);
+			noExpensesText.setText(R.string.no_expenses);
+			noExpensesText.setGravity(Gravity.CENTER);
+			
+			// This is necessary to properly handle onFling
+			expenses.setOnTouchListener(mOnTouchListener);
+			noExpensesText.setOnTouchListener(mOnTouchListener);
+			
+			RelativeLayout.LayoutParams fillParent = new RelativeLayout.LayoutParams(
+					LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+			fillParent.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
+			fillParent.addRule(RelativeLayout.ALIGN_PARENT_LEFT, RelativeLayout.TRUE);
+			fillParent.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+			fillParent.addRule(RelativeLayout.ALIGN_PARENT_RIGHT, RelativeLayout.TRUE);
+
+			layout.addView(expenses, fillParent);
+			layout.addView(noExpensesText, fillParent);
+			
+			expenses.setOnItemClickListener(onItemClickListener);
+			expenses.setOnHierarchyChangeListener(onHierarchyChangeListener);
+
+			// Initialize expense views in the order specified in settings
+			if (filterType == FilterType.CUSTOM)
+				expenses.setCustomFilter(settings.getLastUsedCustomExpenseFilter());
+			else
+				expenses.setFilterType(filterType);
+			
+			// Add view to view flipper, in the correct order
+			mFlipExpenses.addView(layout);
+			
+			// Make the saved filter type as the visible child
+			if (filterType.equals(currentFilter))
+				mFlipExpenses.setDisplayedChild(mFlipExpenses.indexOfChild(layout));
+		}
 	}
+	
+	private void updateCurrentExpensesView()
+	{
+		RelativeLayout layout = (RelativeLayout)mFlipExpenses.getCurrentView();
+		ExpensesView expenses = (ExpensesView)layout.getChildAt(0);
+		
+		// Detach expenses list from all the other ExpensesViews 
+		for (int i=0; i<mFlipExpenses.getChildCount(); ++i)
+		{
+			layout = (RelativeLayout)mFlipExpenses.getChildAt(i);
+			ExpensesView otherExpenses = (ExpensesView)layout.getChildAt(0);
+			
+			if (otherExpenses != expenses)
+				otherExpenses.detachExpenses();
+		}
+		
+		// Read expense data from db
+		expenses.updateExpenses();
+		
+		// Save the current view filter
+		AppSettings settings = AppSettings.instance(getApplicationContext());
+		settings.setExpenseFilterType(expenses.getFilterType());
 
+		// Show "No expenses" if the list is empty
+		updateViewIfNoExpenses();
+
+		// Show filter type in activity title
+		updateTitle();
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -144,15 +289,19 @@ public final class CashLensActivity extends Activity
 		
 	private void updateViewIfNoExpenses()
 	{
-		if (mExpenses.getChildCount() == 0)
+		RelativeLayout layout = (RelativeLayout)mFlipExpenses.getCurrentView();
+		ExpensesView expenses = (ExpensesView)layout.getChildAt(0);
+		TextView noExpensesText = (TextView)layout.getChildAt(1);
+		
+		if (expenses.getChildCount() == 0)
 		{
-			mExpenses.setVisibility(View.INVISIBLE);
-			mNoExpensesText.setVisibility(View.VISIBLE);
+			expenses.setVisibility(View.INVISIBLE);
+			noExpensesText.setVisibility(View.VISIBLE);
 		}
 		else
 		{
-			mNoExpensesText.setVisibility(View.INVISIBLE);
-			mExpenses.setVisibility(View.VISIBLE);
+			noExpensesText.setVisibility(View.INVISIBLE);
+			expenses.setVisibility(View.VISIBLE);
 		}
 	}
 	
@@ -179,5 +328,39 @@ public final class CashLensActivity extends Activity
 		
 		setTitle(getResources().getString(R.string.app_name) + 
 				" (" + filterType + ")");
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onTouchEvent(android.view.MotionEvent)
+	 */
+	@Override
+	public boolean onTouchEvent(MotionEvent event) 
+	{
+        if (mGestureDetector.onTouchEvent(event))
+	        return true;
+
+        return false;
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onWindowFocusChanged(boolean)
+	 */
+	@Override
+	public void onWindowFocusChanged(boolean hasFocus)
+	{
+		if (hasFocus)
+		{
+			try {
+				initializeExpenses();
+			} catch (IOException e) {
+				Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+				finish();	// exit app
+				return;
+			}
+			
+			updateCurrentExpensesView();
+		}
+		
+		super.onWindowFocusChanged(hasFocus);
 	}
 }
