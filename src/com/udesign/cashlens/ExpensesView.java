@@ -31,15 +31,16 @@ import android.widget.ListView;
 public final class ExpensesView extends ListView
 {
 	private ExpenseFilter[] mFilters;
-	private FilterType mFilterType;
+	private FilterType mFilterType = FilterType.NONE;
 	private ArrayListWithNotify<Expense> mExpenses;
-	private CashLensStorage mStorage;
+	
+	private CashLensStorage mStorage = CashLensStorage.instance(getContext().getApplicationContext());
 	
 	public static enum FilterType
 	{
 		NONE, DAY, MONTH, CUSTOM		
 	}
-	
+
 	/**
 	 * @param context
 	 * @throws IOException 
@@ -69,20 +70,12 @@ public final class ExpensesView extends ListView
 	{
 		super(context, attrs, defStyle);
 	}
-	
-	public void initialize() throws IOException
+
+	public FilterType getFilterType() 
 	{
-		mStorage = CashLensStorage.instance(getContext().getApplicationContext());
-
-		AppSettings settings = AppSettings.instance(getContext().getApplicationContext());
-		
-		FilterType filterType = settings.getExpenseFilterType();
-		if (filterType == FilterType.CUSTOM)
-			setCustomFilter(settings.getLastUsedCustomExpenseFilter());
-		else
-			setFilterType(settings.getExpenseFilterType());
+		return mFilterType;
 	}
-
+	
 	public void setFilterType(FilterType filterType)
 	{
 		mFilterType = filterType;
@@ -90,10 +83,7 @@ public final class ExpensesView extends ListView
 		if (filterType == FilterType.CUSTOM)
 			mFilters = null;	// should be followed by a call to setCustomFilter()
 		else
-		{
 			recomputeFilters();
-			updateExpenses();
-		}
 	}
 	
 	protected void recomputeFilters()
@@ -113,6 +103,7 @@ public final class ExpensesView extends ListView
 			mFilters = new ExpenseFilter[1];
 			mFilters[0] = new ExpenseFilter();
 			mFilters[0].startDate = CashLensUtils.startOfDay(now);
+			mFilters[0].endDate = CashLensUtils.startOfNextDay(now);
 			break;
 		case MONTH:
 			mFilters = new ExpenseFilter[accounts.size()];
@@ -136,8 +127,6 @@ public final class ExpensesView extends ListView
 		mFilterType = FilterType.CUSTOM;
 		mFilters = new ExpenseFilter[1];
 		mFilters[0] = filter;
-		
-		updateExpenses();
 	}
 	
 	protected String[] expensesToStrings()
@@ -154,7 +143,13 @@ public final class ExpensesView extends ListView
 		return list;
 	}
 	
-	protected void updateExpenses()
+	public void detachExpenses()
+	{
+		setAdapter(null);
+		mExpenses = null;
+	}
+	
+	public void updateExpenses()
 	{
 		mExpenses = mStorage.readExpenses(mFilters);
 		
