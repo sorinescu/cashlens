@@ -187,7 +187,13 @@ public class ExpenseThumbnail
 				thumbData.portraitData = out.toByteArray();
 			else
 				thumbData.landscapeData = out.toByteArray();
+			
+			// Free the thumbnail
+			thumb.recycle();
 		}
+		
+		// Free the large bitmap
+		origJpeg.recycle();
 		
 		return thumbData;
 	}
