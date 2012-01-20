@@ -119,12 +119,35 @@ public final class CashLensUtils
 		return startOfDay(cal.getTime());
 	}
 	
+	public static Date startOfThisWeek()
+	{
+		Calendar cal = Calendar.getInstance();
+
+		int firstDay = cal.getFirstDayOfWeek();
+		
+		if (firstDay > cal.get(Calendar.DAY_OF_WEEK))
+			cal.add(Calendar.WEEK_OF_YEAR, -1);
+
+		cal.set(Calendar.DAY_OF_WEEK, firstDay);
+
+		return startOfDay(cal.getTime());
+	}
+
+	public static Date startOfNextWeek()
+	{
+		Calendar cal = Calendar.getInstance();
+
+		cal.setTime(startOfThisWeek());
+		cal.add(Calendar.WEEK_OF_YEAR, 1);
+
+		return cal.getTime();
+	}
+
 	public static Date startOfThisMonth(int startDayOfMonth)
 	{
 		Calendar cal = Calendar.getInstance();
-		Date now = cal.getTime();
 		
-		if (now.getDate() < startDayOfMonth)	// the start is startDayOfMonth, last month
+		if (cal.get(Calendar.DATE) < startDayOfMonth)	// the start is startDayOfMonth, last month
 			cal.add(Calendar.MONTH, -1);
 		
 		int lastDayInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
@@ -140,12 +163,11 @@ public final class CashLensUtils
 		return startOfDay(cal.getTime());
 	}
 	
-	public static Date endOfThisMonth(int startDayOfMonth)
+	public static Date startOfNextMonth(int startDayOfMonth)
 	{
 		Calendar cal = Calendar.getInstance();
-		Date now = cal.getTime();
 		
-		if (now.getDate() >= startDayOfMonth)// the end is one day past startDayOfMonth, next month
+		if (cal.get(Calendar.DATE) >= startDayOfMonth)// the end is one day past startDayOfMonth, next month
 			cal.add(Calendar.MONTH, 1);
 		
 		int lastDayInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH);

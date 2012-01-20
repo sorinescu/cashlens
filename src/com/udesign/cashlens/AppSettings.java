@@ -237,6 +237,8 @@ final class AppSettings
 		{
 		case MONTH:
 			return mSharedPrefs.getBoolean("expenseFilterMonthEnabled", true);
+		case WEEK:
+			return mSharedPrefs.getBoolean("expenseFilterWeekEnabled", true);
 		case DAY:
 			return mSharedPrefs.getBoolean("expenseFilterDayEnabled", true);
 		case CUSTOM:
@@ -255,6 +257,9 @@ final class AppSettings
 		{
 		case MONTH:
 			mSharedPrefsEditor.putBoolean("expenseFilterMonthEnabled", enabled);
+			break;
+		case WEEK:
+			mSharedPrefsEditor.putBoolean("expenseFilterWeekEnabled", enabled);
 			break;
 		case DAY:
 			mSharedPrefsEditor.putBoolean("expenseFilterDayEnabled", enabled);

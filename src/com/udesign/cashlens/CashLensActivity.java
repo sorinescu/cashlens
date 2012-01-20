@@ -324,6 +324,9 @@ public final class CashLensActivity extends Activity
 		case MONTH:
 			filterType = getResources().getString(R.string.current_month);
 			break;
+		case WEEK:
+			filterType = getResources().getString(R.string.current_week);
+			break;
 		}
 		
 		setTitle(getResources().getString(R.string.app_name) + 

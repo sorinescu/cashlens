@@ -28,6 +28,11 @@
             android:defaultValue="true" />
         
         <CheckBoxPreference 
+            android:key="expenseFilterWeekEnabled"
+            android:title="Week view" 
+            android:defaultValue="true" />
+        
+        <CheckBoxPreference 
             android:key="expenseFilterDayEnabled"
             android:title="Day view" 
             android:defaultValue="true" />

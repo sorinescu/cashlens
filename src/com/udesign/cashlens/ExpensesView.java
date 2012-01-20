@@ -38,7 +38,7 @@ public final class ExpensesView extends ListView
 	
 	public static enum FilterType
 	{
-		NONE, DAY, MONTH, CUSTOM		
+		NONE, DAY, WEEK, MONTH, CUSTOM		
 	}
 
 	/**
@@ -105,6 +105,12 @@ public final class ExpensesView extends ListView
 			mFilters[0].startDate = CashLensUtils.startOfDay(now);
 			mFilters[0].endDate = CashLensUtils.startOfNextDay(now);
 			break;
+		case WEEK:
+			mFilters = new ExpenseFilter[1];
+			mFilters[0] = new ExpenseFilter();
+			mFilters[0].startDate = CashLensUtils.startOfThisWeek();
+			mFilters[0].endDate = CashLensUtils.startOfNextWeek();
+			break;
 		case MONTH:
 			mFilters = new ExpenseFilter[accounts.size()];
 			for (int i=0; i<mFilters.length; ++i)
@@ -114,7 +120,7 @@ public final class ExpensesView extends ListView
 				
 				filter.accountId = account.id;
 				filter.startDate = CashLensUtils.startOfThisMonth(account.monthStartDay); 
-				filter.endDate = CashLensUtils.endOfThisMonth(account.monthStartDay);
+				filter.endDate = CashLensUtils.startOfNextMonth(account.monthStartDay);
 				
 				mFilters[i] = filter;
 			}
