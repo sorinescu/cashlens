@@ -491,8 +491,6 @@ public final class CashLensStorage
 
 		mCurrencies = new ArrayListWithNotify<Currency>();
 		readCurrencies();
-		
-		mExpenses = new ArrayListWithNotify<Expense>();
 	}
 
 	public void close()
@@ -662,12 +660,12 @@ public final class CashLensStorage
 		mAccounts.notifyDataChanged();
 	}
 
-	public ArrayAdapterIDAndName<Account> accountsAdapter(Context context)
+	public synchronized ArrayAdapterIDAndName<Account> accountsAdapter(Context context)
 	{
 		return new ArrayAdapterIDAndName<Account>(context, mAccounts);
 	}
 	
-	public ArrayListWithNotify<Account> getAccounts()
+	public synchronized ArrayListWithNotify<Account> getAccounts()
 	{
 		return mAccounts;
 	}
@@ -764,7 +762,7 @@ public final class CashLensStorage
 		mCurrencies.notifyDataChanged();
 	}
 
-	public ArrayAdapterIDAndName<Currency> currenciesAdapter(Context context)
+	public synchronized ArrayAdapterIDAndName<Currency> currenciesAdapter(Context context)
 	{
 		return new ArrayAdapterIDAndName<Currency>(context, mCurrencies);
 	}
@@ -811,7 +809,7 @@ public final class CashLensStorage
 			mExpenses.add(expense);
 	}
 
-	public void saveExpense(Account account, int amount,
+	public synchronized void saveExpense(Account account, int amount,
 			Date date, byte[] jpegData) throws IOException
 	{
 		File imageFile = randomFile(storageDirectory(DataType.IMAGE), ".jpeg");
@@ -843,7 +841,7 @@ public final class CashLensStorage
 				expense.accountName() + ", amount " + expense.amountToString());
 	}
 
-	public void updateExpense(Expense expense) throws IOException
+	public synchronized void updateExpense(Expense expense) throws IOException
 	{
 		ContentValues values = new ContentValues();
 		values.put(ExpensesTable.ACCOUNT, expense.accountId);
@@ -871,7 +869,7 @@ public final class CashLensStorage
 		mExpenses.notifyDataChanged();
 	}
 
-	public void deleteExpense(Expense expense) throws IOException
+	public synchronized void deleteExpense(Expense expense) throws IOException
 	{
 		int affected = db().delete(ExpensesTable.TABLE_NAME,
 				ExpensesTable._ID + "=" + Integer.toString(expense.id), null);
@@ -944,7 +942,7 @@ public final class CashLensStorage
 		return true;
 	}
 	
-	public ArrayListWithNotify<Expense> readExpenses(ExpenseFilter[] filters)
+	public synchronized ArrayListWithNotify<Expense> readExpenses(ExpenseFilter[] filters)
 	{
 		boolean needToRead = false;		// don't reread expenses if filters didn't change
 		
@@ -1079,12 +1077,12 @@ public final class CashLensStorage
 		return false;
 	}
 	
-	public void notifyExpensesChanged()
+	public synchronized void notifyExpensesChanged()
 	{
 		mExpenses.notifyDataChanged();
 	}
 	
-	public void addAccount(Account account) throws IOException
+	public synchronized void addAccount(Account account) throws IOException
 	{
 		ContentValues values = new ContentValues();
 		values.put(AccountsTable.NAME, account.name);
@@ -1106,7 +1104,7 @@ public final class CashLensStorage
 		mAccounts.notifyDataChanged();
 	}
 
-	public void deleteAccount(Account account) throws IOException
+	public synchronized void deleteAccount(Account account) throws IOException
 	{
 		int affected = db().delete(AccountsTable.TABLE_NAME,
 				AccountsTable._ID + "=" + Integer.toString(account.id), null);
@@ -1147,7 +1145,7 @@ public final class CashLensStorage
 		return id;
 	}
 
-	public void loadExpenseThumbnail(ExpenseThumbnail thumb) throws IOException
+	public synchronized void loadExpenseThumbnail(ExpenseThumbnail thumb) throws IOException
 	{
 		Cursor cursor = db().query(ExpenseThumbnailsTable.TABLE_NAME,
 				new String[] { ExpenseThumbnailsTable.DATA_PORTRAIT, ExpenseThumbnailsTable.DATA_LANDSCAPE }, 
