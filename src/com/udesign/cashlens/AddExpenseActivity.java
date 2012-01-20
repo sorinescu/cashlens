@@ -132,6 +132,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 			finish();
 		}
 		
+		mAccountsAdapter.setTextAppearance(R.style.large_textview_text);
 	    mAccountSpinner.setAdapter(mAccountsAdapter);
 	    
 	    // automatically select last used account

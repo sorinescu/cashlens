@@ -26,10 +26,11 @@ import android.widget.TextView;
 public class ArrayAdapterIDAndName<T extends ArrayAdapterIDAndName.IDAndName> extends BaseAdapter
 	implements ArrayListWithNotify.OnDataChangedListener
 {
-	ArrayListWithNotify<T> mItems;
-	Context mContext;
-	int mDropDownResource;
-	LayoutInflater mInflater;
+	protected ArrayListWithNotify<T> mItems;
+	protected Context mContext;
+	protected int mDropDownResource;
+	protected LayoutInflater mInflater;
+	protected int mForcedTextAppearanceResource = -1;
 
 	public static class IDAndName
 	{
@@ -44,6 +45,11 @@ public class ArrayAdapterIDAndName<T extends ArrayAdapterIDAndName.IDAndName> ex
 		mInflater = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		
 		mItems.addOnDataChangedListener(this);
+	}
+	
+	public void setTextAppearance(int resID)
+	{
+		mForcedTextAppearanceResource = resID;
 	}
 	
 	public void release()
@@ -86,7 +92,11 @@ public class ArrayAdapterIDAndName<T extends ArrayAdapterIDAndName.IDAndName> ex
 
 	public View getView(int position, View convertView, ViewGroup parent) 
 	{
-		return createResource(position, convertView, parent,android.R.layout.simple_spinner_item);
+		TextView view = (TextView)createResource(position, convertView, parent,android.R.layout.simple_spinner_item);
+		if (mForcedTextAppearanceResource >= 0)
+			view.setTextAppearance(mContext, mForcedTextAppearanceResource);
+		
+		return view;
 	}
 
 	public View getDropDownView(int position, View convertView, ViewGroup parent) 
