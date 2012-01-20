@@ -110,6 +110,15 @@ public final class CashLensUtils
 		return new Date(origDate.getYear(), origDate.getMonth(), origDate.getDate());
 	}
 	
+	public static Date startOfNextDay(Date origDate)
+	{
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(origDate);
+		cal.add(Calendar.DATE, 1);
+		
+		return startOfDay(cal.getTime());
+	}
+	
 	public static Date startOfThisMonth(int startDayOfMonth)
 	{
 		Calendar cal = Calendar.getInstance();
