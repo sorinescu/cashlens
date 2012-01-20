@@ -31,6 +31,7 @@ final class AppSettings
 	private static AppSettings mInstance = null;
 	
 	private SharedPreferences mSharedPrefs;
+	private SharedPreferences.Editor mSharedPrefsEditor;
 	
 	public static class PictureSize
 	{
@@ -75,6 +76,7 @@ final class AppSettings
 //		Log.d("AppSettings", "creating AppSettings");
 		mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(
 				context.getApplicationContext());
+		mSharedPrefsEditor = mSharedPrefs.edit();
 	}
 	
 	private Date getDate(String fieldName)
@@ -106,7 +108,7 @@ final class AppSettings
 			val = df.format(date);
 		}
 		
-		mSharedPrefs.edit().putString(fieldName, val);
+		mSharedPrefsEditor.putString(fieldName, val);
 	}
 	
 	public static AppSettings instance(Context context)
@@ -129,8 +131,8 @@ final class AppSettings
 	 */
 	public void setLastUsedCurrency(int lastUsedCurrency)
 	{
-		mSharedPrefs.edit().putInt("lastUsedCurrency", lastUsedCurrency);
-		mSharedPrefs.edit().commit();
+		mSharedPrefsEditor.putInt("lastUsedCurrency", lastUsedCurrency);
+		mSharedPrefsEditor.commit();
 	}
 	/**
 	 * @return the lastUsedAccount
@@ -144,8 +146,8 @@ final class AppSettings
 	 */
 	public void setLastUsedAccount(int lastUsedAccount)
 	{
-		mSharedPrefs.edit().putInt("lastUsedAccount", lastUsedAccount);
-		mSharedPrefs.edit().commit();
+		mSharedPrefsEditor.putInt("lastUsedAccount", lastUsedAccount);
+		mSharedPrefsEditor.commit();
 	}
 	/**
 	 * @return the expenseFilterType
@@ -160,8 +162,8 @@ final class AppSettings
 	 */
 	public void setExpenseFilterType(ExpensesView.FilterType filterType)
 	{
-		mSharedPrefs.edit().putInt("expenseFilterType", filterType.ordinal());
-		mSharedPrefs.edit().commit();
+		mSharedPrefsEditor.putInt("expenseFilterType", filterType.ordinal());
+		mSharedPrefsEditor.commit();
 	}
 	/**
 	 * @return the lastUsedCustomExpenseFilter
@@ -182,8 +184,8 @@ final class AppSettings
 	{
 		putDate("lastUsedCustomExpenseFilterStart", filter.startDate);
 		putDate("lastUsedCustomExpenseFilterEnd", filter.endDate);
-		mSharedPrefs.edit().putInt("lastUsedCustomExpenseFilterAccount", filter.accountId);
-		mSharedPrefs.edit().commit();
+		mSharedPrefsEditor.putInt("lastUsedCustomExpenseFilterAccount", filter.accountId);
+		mSharedPrefsEditor.commit();
 	}
 
 	/**
@@ -199,8 +201,8 @@ final class AppSettings
 	 */
 	public void setJpegQuality(int jpegQuality)
 	{
-		mSharedPrefs.edit().putInt("jpegQuality", jpegQuality);
-		mSharedPrefs.edit().commit();
+		mSharedPrefsEditor.putInt("jpegQuality", jpegQuality);
+		mSharedPrefsEditor.commit();
 	}
 	
 	/**
@@ -222,7 +224,48 @@ final class AppSettings
 	public void setJpegPictureSize(PictureSize jpegPictureSize)
 	{
 //		Log.d("setJpegPictureSize", jpegPictureSize.toString());
-		mSharedPrefs.edit().putString("jpegPictureSize", jpegPictureSize.toString());
-		mSharedPrefs.edit().commit();
+		mSharedPrefsEditor.putString("jpegPictureSize", jpegPictureSize.toString());
+		mSharedPrefsEditor.commit();
+	}
+	
+	/**
+	 * @return the filterViewsOrder
+	 */
+	public boolean getExpenseFilterViewEnabled(ExpensesView.FilterType filterType) 
+	{
+		switch (filterType)
+		{
+		case MONTH:
+			return mSharedPrefs.getBoolean("expenseFilterMonthEnabled", true);
+		case DAY:
+			return mSharedPrefs.getBoolean("expenseFilterDayEnabled", true);
+		case CUSTOM:
+			return mSharedPrefs.getBoolean("expenseFilterCustomEnabled", true);
+		default:
+			return false;
+		}
+	}
+
+	/**
+	 * @param filterViewsOrder the filterViewsOrder to set
+	 */
+	public void setExpenseFilterViewEnabled(ExpensesView.FilterType filterType, boolean enabled) 
+	{
+		switch (filterType)
+		{
+		case MONTH:
+			mSharedPrefsEditor.putBoolean("expenseFilterMonthEnabled", enabled);
+			break;
+		case DAY:
+			mSharedPrefsEditor.putBoolean("expenseFilterDayEnabled", enabled);
+			break;
+		case CUSTOM:
+			mSharedPrefsEditor.putBoolean("expenseFilterCustomEnabled", enabled);
+			break;
+		default:
+			return;
+		}
+		
+		mSharedPrefsEditor.commit();
 	}
 }
