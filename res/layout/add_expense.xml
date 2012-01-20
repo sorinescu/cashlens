@@ -22,20 +22,21 @@
 
         <EditText
             android:id="@+id/txtSum"
-            android:layout_width="fill_parent"
+            android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
             android:background="@drawable/rounded_translucent_textview"
             android:editable="false"
             android:enabled="false"
             android:inputType="none|numberDecimal"
-            style="@style/large_text" >
+            style="@style/large_button_text"
+            android:textColor="#FF00FF00" >
 
         </EditText>
 
         <Button
             android:id="@+id/btnDel"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/rounded_translucent_button"
@@ -52,7 +53,7 @@
 
         <Button
             android:id="@+id/btn1"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -61,7 +62,7 @@
 
         <Button
             android:id="@+id/btn2"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -70,7 +71,7 @@
 
         <Button
             android:id="@+id/btn3"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -87,7 +88,7 @@
 
         <Button
             android:id="@+id/btn4"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -96,7 +97,7 @@
 
         <Button
             android:id="@+id/btn5"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -105,7 +106,7 @@
 
         <Button
             android:id="@+id/btn6"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -122,7 +123,7 @@
 
         <Button
             android:id="@+id/btn7"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -131,7 +132,7 @@
 
         <Button
             android:id="@+id/btn8"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -140,7 +141,7 @@
 
         <Button
             android:id="@+id/btn9"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -157,7 +158,7 @@
 
         <Button
             android:id="@+id/btnDot"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -166,7 +167,7 @@
 
         <Button
             android:id="@+id/btn0"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -175,7 +176,7 @@
 
         <Button
             android:id="@+id/btnUnused1"
-            style="@style/large_text"
+            style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
@@ -194,35 +195,33 @@
         <Spinner
             android:id="@+id/spinAccount"
             android:prompt="@string/select_an_account"
-            style="@style/large_text"
             android:background="@drawable/rounded_translucent_spinner"
-            android:layout_width="fill_parent"
+            android:layout_width="0dip"
             android:layout_height="wrap_content"
             android:padding="8sp"
             android:layout_weight="1" />
+        
     </LinearLayout>
 
     <ImageButton
         android:id="@+id/btnRec"
-        style="@style/large_text"
+        style="@style/large_button_text"
         android:src="@drawable/record_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_toLeftOf="@+id/btnShoot"
         android:background="@drawable/rounded_translucent_button"
-        android:layout_weight="1"
         android:visibility="invisible" />
     
     <ImageButton
         android:id="@+id/btnShoot"
-        style="@style/large_text"
+        style="@style/large_button_text"
         android:src="@drawable/camera_aperture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
-        android:background="@drawable/rounded_translucent_button"
-        android:layout_weight="1" />
+        android:background="@drawable/rounded_translucent_button" />
     
 </RelativeLayout>
