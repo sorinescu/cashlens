@@ -53,16 +53,14 @@ public class OutlineTextView extends TextView
 	@Override
 	protected void onDraw(Canvas canvas)
 	{
-		if (true)
-		{
-			canvas.saveLayer(null, BLACK_BORDER_PAINT, Canvas.HAS_ALPHA_LAYER_SAVE_FLAG
-	                | Canvas.FULL_COLOR_LAYER_SAVE_FLAG | Canvas.MATRIX_SAVE_FLAG);
-			drawBackground(canvas, -BORDER_WIDTH, -BORDER_WIDTH);
-			drawBackground(canvas, BORDER_WIDTH + BORDER_WIDTH, 0);
-			drawBackground(canvas, 0, BORDER_WIDTH + BORDER_WIDTH);
-			drawBackground(canvas, -BORDER_WIDTH - BORDER_WIDTH, 0);
-			canvas.restore();
-		}
+		canvas.saveLayer(null, BLACK_BORDER_PAINT, Canvas.HAS_ALPHA_LAYER_SAVE_FLAG
+                | Canvas.FULL_COLOR_LAYER_SAVE_FLAG | Canvas.MATRIX_SAVE_FLAG);
+		drawBackground(canvas, -BORDER_WIDTH, -BORDER_WIDTH);
+		drawBackground(canvas, BORDER_WIDTH + BORDER_WIDTH, 0);
+		drawBackground(canvas, 0, BORDER_WIDTH + BORDER_WIDTH);
+		drawBackground(canvas, -BORDER_WIDTH - BORDER_WIDTH, 0);
+		canvas.restore();
+
 		super.onDraw(canvas);
 	}
 
