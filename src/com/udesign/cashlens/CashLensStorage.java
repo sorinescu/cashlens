@@ -53,15 +53,35 @@ public final class CashLensStorage
 	private ArrayListWithNotify<Account> mAccounts;
 	private ArrayListWithNotify<Currency> mCurrencies;
 	private ArrayListWithNotify<Expense> mExpenses;
-	private ExpenseFilter[] mExpenseFilters;
+	
+	private ExpenseFilterType mExpenseFilterType;
+	private ExpenseFilter mCustomExpenseFilter;
+	private ExpenseFilter[] mExpenseFilters;	// current expense filters, computed from filter type and custom filter
+
+	public static enum ExpenseFilterType
+	{
+		NONE, DAY, WEEK, MONTH, CUSTOM		
+	}
 
 	/**
 	 * Account data.
 	 */
 	public static class Account extends ArrayAdapterIDAndName.IDAndName
 	{
+		private CashLensStorage mStorage;
+		
 		int currencyId;
-		int monthStartDay;
+		int monthStartDay = 1;
+
+		Account(CashLensStorage storage)
+		{
+			mStorage = storage;
+		}
+		
+		public Currency getCurrency()
+		{
+			return mStorage.getCurrency(currencyId);
+		}
 	}
 
 	/**
@@ -133,6 +153,11 @@ public final class CashLensStorage
 		public int compareTo(Currency another)
 		{
 			return name.compareTo(another.name);
+		}
+		
+		public String fullName()
+		{
+			return name + " (" + code + ")";
 		}
 	}
 
@@ -442,7 +467,7 @@ public final class CashLensStorage
 		return mInstance;
 	}
 
-	public Account getAccount(int accountId)
+	public synchronized Account getAccount(int accountId)
 	{
 		for (Account account: mAccounts)
 			if (account.id == accountId)
@@ -451,7 +476,7 @@ public final class CashLensStorage
 		return null;
 	}
 
-	public Currency getCurrency(int currencyId)
+	public synchronized Currency getCurrency(int currencyId)
 	{
 		for (Currency currency : mCurrencies)
 			if (currency.id == currencyId)
@@ -460,7 +485,7 @@ public final class CashLensStorage
 		return null;
 	}
 
-	public Expense getExpense(int expenseId)
+	public synchronized Expense getExpense(int expenseId)
 	{
 		// TODO this function is limited to the expenses we 
 		// have read through the last readExpenses call; fix this ?
@@ -642,7 +667,7 @@ public final class CashLensStorage
 		cursor.moveToFirst();
 		while (!cursor.isAfterLast())
 		{
-			Account account = new Account();
+			Account account = new Account(this);
 
 			account.id = cursor.getInt(idIndex);
 			account.name = cursor.getString(nameIndex);
@@ -760,6 +785,11 @@ public final class CashLensStorage
 		// auto notification is turned off; manually notify of changed data
 		Collections.sort(mCurrencies);
 		mCurrencies.notifyDataChanged();
+	}
+
+	public synchronized ArrayListWithNotify<Currency> getCurencies()
+	{
+		return mCurrencies;
 	}
 
 	public synchronized ArrayAdapterIDAndName<Currency> currenciesAdapter(Context context)
@@ -931,7 +961,7 @@ public final class CashLensStorage
 		if (filters == null || mExpenseFilters == null)
 			return filters == mExpenseFilters;	// true if both are null
 		else if (filters.length != mExpenseFilters.length)
-			return true;
+			return false;
 		else
 		{
 			for (int i=0; i<filters.length; ++i)
@@ -942,27 +972,95 @@ public final class CashLensStorage
 		return true;
 	}
 	
-	public synchronized ArrayListWithNotify<Expense> readExpenses(ExpenseFilter[] filters)
+	// If filterType is not CUSTOM, customFilter is ignored
+	public synchronized void setExpenseFilter(ExpenseFilterType filterType, ExpenseFilter customFilter)
 	{
-		boolean needToRead = false;		// don't reread expenses if filters didn't change
+		mExpenseFilterType = filterType;
+		if (filterType == ExpenseFilterType.CUSTOM)
+			mCustomExpenseFilter = customFilter;
 		
+		recomputeExpenseFilters();
+	}
+	
+	private boolean recomputeExpenseFilters()
+	{
+		Calendar cal = Calendar.getInstance();
+		Date now = cal.getTime();
+		
+		ExpenseFilter[] filters = null;
+		
+		Log.d("recomputeExpenseFilters", "computing filters");
+		
+		switch (mExpenseFilterType)
+		{
+		case NONE:
+			break;	// already null
+		case CUSTOM:
+			filters = new ExpenseFilter[1];
+			filters[0] = mCustomExpenseFilter;
+			break;
+		case DAY:
+			filters = new ExpenseFilter[1];
+			filters[0] = new ExpenseFilter();
+			filters[0].startDate = CashLensUtils.startOfDay(now);
+			filters[0].endDate = CashLensUtils.startOfNextDay(now);
+			break;
+		case WEEK:
+			filters = new ExpenseFilter[1];
+			filters[0] = new ExpenseFilter();
+			filters[0].startDate = CashLensUtils.startOfThisWeek();
+			filters[0].endDate = CashLensUtils.startOfNextWeek();
+			break;
+		case MONTH:
+			filters = new ExpenseFilter[mAccounts.size()];
+			for (int i=0; i<filters.length; ++i)
+			{
+				ExpenseFilter filter = new ExpenseFilter();
+				Account account = mAccounts.get(i);
+				
+				filter.accountId = account.id;
+				filter.startDate = CashLensUtils.startOfThisMonth(account.monthStartDay); 
+				filter.endDate = CashLensUtils.startOfNextMonth(account.monthStartDay);
+				
+				filters[i] = filter;
+			}
+			break;
+		}
+		
+		// Need to reread the expenses if the filters have changed
+		if (!expenseFiltersEqual(filters))
+		{
+			Log.d("recomputeExpenseFilters", "filters have changed !");
+			for (int i=0; i<filters.length; ++i)
+				Log.d("recomputeExpenseFilters", "filter " + Integer.toString(i) +
+						": account=" + Integer.toString(filters[i].accountId) +
+						", startDate=" + filters[i].startDate.toLocaleString() +
+						", endDate=" + filters[i].endDate.toLocaleString());
+			
+			mExpenseFilters = filters;
+			
+			// Also notify listeners that the expenses have changed (autoNotify is off)
+			readExpenses(true);
+			mExpenses.notifyDataChanged();
+			
+			return true;	// filters have changed, expenses have been reloaded
+		}
+		
+		return false;	// no change
+	}
+
+	public synchronized ArrayListWithNotify<Expense> readExpenses(boolean force)
+	{
 		// cache the retrieved expenses locally
 		if (mExpenses == null)
 		{
 			mExpenses = new ArrayListWithNotify<Expense>();
 			mExpenses.setAutoNotify(false);	// notify will be called manually
 			
-			needToRead = true;	// first call; read
+			force = true;	// need to read
 		}
 		
-		// did the filters change ?
-		if (!expenseFiltersEqual(filters))
-		{
-			mExpenseFilters = filters;
-			needToRead = true; 
-		}
-		
-		if (!needToRead)
+		if (!force)
 		{
 			Log.d("readExpenses", "return cached expenses");
 			return mExpenses;	// return cached copy; should be the same
@@ -971,11 +1069,11 @@ public final class CashLensStorage
 		String cond = "";
 		boolean needOr = false;
 		
-		if (filters != null)
+		if (mExpenseFilters != null)
 		{
-			for (int i=0; i<filters.length; ++i)
+			for (int i=0; i<mExpenseFilters.length; ++i)
 			{
-				ExpenseFilter filter = filters[i];
+				ExpenseFilter filter = mExpenseFilters[i];
 				String localCond = "";
 			
 				if (filter.startDate != null)
@@ -1101,6 +1199,32 @@ public final class CashLensStorage
 
 		// Also add to accounts list
 		mAccounts.add(account);
+		
+		// Expense filters depend on the account list; recompute 
+		recomputeExpenseFilters();
+
+		mAccounts.notifyDataChanged();
+	}
+
+	public synchronized void updateAccount(Account account) throws IOException
+	{
+		ContentValues values = new ContentValues();
+		values.put(AccountsTable.NAME, account.name);
+		values.put(AccountsTable.CURRENCY, account.currencyId);
+		values.put(AccountsTable.MONTH_START, account.monthStartDay);
+		
+		int affected = db().update(AccountsTable.TABLE_NAME, values, 
+				AccountsTable._ID + "=" + Integer.toString(account.id), null);
+		if (affected != 1)
+			throw new IOException("Updated " + Integer.toString(affected)
+					+ " items instead of 1 from " + AccountsTable.TABLE_NAME);
+
+		Log.w("updateAccount", "Updated account: " + account.name + ", ID " + 
+				Integer.toString(account.id));
+
+		// Expense filters depend on the account list; recompute 
+		recomputeExpenseFilters();
+		
 		mAccounts.notifyDataChanged();
 	}
 
@@ -1122,11 +1246,22 @@ public final class CashLensStorage
 
 		// Also remove from accounts list
 		mAccounts.remove(account);
-		mAccounts.notifyDataChanged();
 		
-		// Re-read expenses and notify listeners
-		readExpenses(mExpenseFilters);
-		mExpenses.notifyDataChanged();
+		// Expense filters depend on the account list; recompute.
+		// If the filters have changed, the expenses will be reloaded automatically and 
+		// we won't need to reload them manually here
+		if (!recomputeExpenseFilters())
+		{
+			// Don't reload if not already loaded
+			if (mExpenses != null)
+			{
+				mExpenses.clear();
+				readExpenses(true);
+				mExpenses.notifyDataChanged();
+			}
+		}
+		
+		mAccounts.notifyDataChanged();
 	}
 	
 	protected int saveExpenseThumbnail(ExpenseThumbnail.Data thumbData) throws IOException

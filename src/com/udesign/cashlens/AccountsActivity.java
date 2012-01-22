@@ -18,31 +18,69 @@ package com.udesign.cashlens;
 import java.io.IOException;
 
 import com.udesign.cashlens.CashLensStorage.Account;
+import com.udesign.cashlens.CashLensStorage.Currency;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Html;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ExpandableListView;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
-import android.widget.ExpandableListView.OnGroupClickListener;
-import android.widget.ExpandableListView.OnGroupCollapseListener;
 
-public class AccountsActivity extends Activity 
+public final class AccountsActivity extends Activity 
 {
 	private CashLensStorage mStorage;
-	private ExpandableListView mAccountsList;
+	private ListView mAccountsList;
 	private TextView mNoAccountsText;
-	private Account mSelectedAccount = null;
-	private boolean mIgnoreCollapseEvents = false;
+	
+	private static class ArrayAdapterAccount extends ArrayAdapterIDAndName<Account>
+	{
+		public ArrayAdapterAccount(Context context, ArrayListWithNotify<Account> items)
+		{
+			super(context, items);
+		}
+
+		/* (non-Javadoc)
+		 * @see com.udesign.cashlens.ArrayAdapterIDAndName#getView(int, android.view.View, android.view.ViewGroup)
+		 */
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent)
+		{
+			TextView textView;
+
+			if (convertView == null) 
+			{
+				Log.d("AccountAdapter","Creating Inflater");
+				textView = (TextView)mInflater.inflate(android.R.layout.simple_list_item_1, parent, false);
+			} 
+			else
+				textView = (TextView)convertView;
+			
+			Account account = mItems.get(position);
+			
+			String html = "<big>" + account.name + "</big>" +  "<br/>";
+			
+			Currency currency = account.getCurrency();
+	        html += "<small>" + currency.fullName() + "</small>" + "<br/>"; 
+	        
+	        html += "<small>" + parent.getContext().getString(R.string.month_start) + ": " 
+	        		+ Integer.toString(account.monthStartDay) + "</small>";
+	        
+	        // formatted text
+			textView.setText(Html.fromHtml(html));
+			
+			return textView;
+		}
+	}
 	
 	/* (non-Javadoc)
 	 * @see android.app.Activity#onCreate(android.os.Bundle)
@@ -61,10 +99,10 @@ public class AccountsActivity extends Activity
 			e.printStackTrace();
 		}
 		
-		mAccountsList = (ExpandableListView)findViewById(R.id.lstAccounts);
+		mAccountsList = (ListView)findViewById(R.id.lstAccounts);
 		mNoAccountsText = (TextView)findViewById(android.R.id.text1);
 
-		AccountsExpandableListAdapter adapter = new AccountsExpandableListAdapter(this);
+		ArrayAdapterAccount adapter = new ArrayAdapterAccount(this, mStorage.getAccounts());
 		mAccountsList.setAdapter(adapter);
 		
 		// If there are no more accounts following a delete, show "No accounts" text
@@ -82,35 +120,16 @@ public class AccountsActivity extends Activity
 			}
 		});
 
-		mAccountsList.setOnGroupCollapseListener(new OnGroupCollapseListener()
+		mAccountsList.setOnItemClickListener(new OnItemClickListener()
 		{
-			public void onGroupCollapse(int groupPosition)
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id)
 			{
-				// Android 2.1 doesn't call onGroupClick when collapsing groups.
-				// We only collapse groups by clicking, so behave just like onGroupClick, unless mIgnoreCollapseEvents is set.
+				Account account = (Account)mAccountsList.getItemAtPosition(position);
 				
-				if (mIgnoreCollapseEvents)
-					return;
-				
-				int itemPos = mAccountsList.getFlatListPosition(ExpandableListView.getPackedPositionForGroup(groupPosition));
-				mSelectedAccount = (Account)mAccountsList.getItemAtPosition(itemPos);
-				mAccountsList.setItemChecked(itemPos, true);
-				
-				Log.w("GroupClicked", "Collapsed (but selected) group: " + mSelectedAccount.name);
-			}
-		});
-		
-		mAccountsList.setOnGroupClickListener(new OnGroupClickListener()
-		{
-			public boolean onGroupClick(ExpandableListView parent, View v,
-					int groupPosition, long id)
-			{
-				int itemPos = mAccountsList.getFlatListPosition(ExpandableListView.getPackedPositionForGroup(groupPosition));
-				mSelectedAccount = (Account)mAccountsList.getItemAtPosition(itemPos);
-				mAccountsList.setItemChecked(itemPos, true);
-				
-				Log.w("GroupClicked", "Selected group: " + mSelectedAccount.name);
-				return false;
+				Intent myIntent = new Intent(AccountsActivity.this, AddEditAccount.class);
+				myIntent.putExtra("account_id", account.id);
+				startActivity(myIntent);
 			}
 		});
 		
@@ -143,55 +162,9 @@ public class AccountsActivity extends Activity
 			startActivity(myIntent);
 	        return true;
 	        
-	    case R.id.delAccount:
-	    	delAccountWithConfirm();
-	        return true;
-	        
 	    default:
 	        return super.onOptionsItemSelected(item);
 	    }
-	}
-	
-	protected void delAccountWithConfirm()
-	{
-		if (mSelectedAccount == null)
-			return;
-		
-		AlertDialog.Builder alert = new AlertDialog.Builder(this);
-		
-		alert.setTitle(getString(R.string.delete_account) + ": " + mSelectedAccount.name);
-		alert.setMessage(getString(R.string.delete_account_are_you_sure));
-
-		alert.setPositiveButton(getString(android.R.string.yes), new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int whichButton) {
-				onDelAccountOK();
-			}
-		});
-
-		alert.setNegativeButton(getString(android.R.string.no), new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int whichButton) {
-				// do nothing
-			}
-		});
-
-		alert.show();
-	}
-	
-	private void onDelAccountOK()
-	{
-		if (mSelectedAccount == null)
-			return;
-		
-		try
-		{
-			mStorage.deleteAccount(mSelectedAccount);
-			mSelectedAccount = null;
-			Toast.makeText(this, R.string.account_deleted, Toast.LENGTH_SHORT).show();
-		} 
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
 	}
 	
 	private void updateViewIfNoAccounts()

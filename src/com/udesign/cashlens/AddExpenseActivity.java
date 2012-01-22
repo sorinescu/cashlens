@@ -481,6 +481,8 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	        parameters.setJpegQuality(settings.getJpegQuality());
 	        parameters.setPictureSize(picSize.width(), picSize.height());
 
+	        parameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
+	        
 	    	Log.w("takePicture", "setting picture quality " + Integer.toString(parameters.getJpegQuality()) + 
 				", size " + picSize.toString());
 	    	

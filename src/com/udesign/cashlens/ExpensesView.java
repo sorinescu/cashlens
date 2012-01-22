@@ -16,13 +16,10 @@
 package com.udesign.cashlens;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 
-import com.udesign.cashlens.CashLensStorage.Account;
 import com.udesign.cashlens.CashLensStorage.Expense;
 import com.udesign.cashlens.CashLensStorage.ExpenseFilter;
+import com.udesign.cashlens.CashLensStorage.ExpenseFilterType;
 
 import android.content.Context;
 import android.util.AttributeSet;
@@ -30,17 +27,12 @@ import android.widget.ListView;
 
 public final class ExpensesView extends ListView
 {
-	private ExpenseFilter[] mFilters;
-	private FilterType mFilterType = FilterType.NONE;
+	private ExpenseFilter mCustomFilter;
+	private ExpenseFilterType mFilterType = ExpenseFilterType.NONE;
 	private ArrayListWithNotify<Expense> mExpenses;
 	
 	private CashLensStorage mStorage = CashLensStorage.instance(getContext().getApplicationContext());
 	
-	public static enum FilterType
-	{
-		NONE, DAY, WEEK, MONTH, CUSTOM		
-	}
-
 	/**
 	 * @param context
 	 * @throws IOException 
@@ -71,70 +63,18 @@ public final class ExpensesView extends ListView
 		super(context, attrs, defStyle);
 	}
 
-	public FilterType getFilterType() 
+	public ExpenseFilterType getFilterType() 
 	{
 		return mFilterType;
 	}
 	
-	public void setFilterType(FilterType filterType)
+	public void setFilterType(ExpenseFilterType filterType, ExpenseFilter customFilter)
 	{
 		mFilterType = filterType;
-		
-		if (filterType == FilterType.CUSTOM)
-			mFilters = null;	// should be followed by a call to setCustomFilter()
-		else
-			recomputeFilters();
-	}
-	
-	protected void recomputeFilters()
-	{
-		Calendar cal = Calendar.getInstance();
-		ArrayList<Account> accounts = mStorage.getAccounts();
-		Date now = cal.getTime();
-		
-		switch (mFilterType)
-		{
-		case NONE:
-			mFilters = null;
-			break;
-		case CUSTOM:	// applied in setCustomFilter
-			break;
-		case DAY:
-			mFilters = new ExpenseFilter[1];
-			mFilters[0] = new ExpenseFilter();
-			mFilters[0].startDate = CashLensUtils.startOfDay(now);
-			mFilters[0].endDate = CashLensUtils.startOfNextDay(now);
-			break;
-		case WEEK:
-			mFilters = new ExpenseFilter[1];
-			mFilters[0] = new ExpenseFilter();
-			mFilters[0].startDate = CashLensUtils.startOfThisWeek();
-			mFilters[0].endDate = CashLensUtils.startOfNextWeek();
-			break;
-		case MONTH:
-			mFilters = new ExpenseFilter[accounts.size()];
-			for (int i=0; i<mFilters.length; ++i)
-			{
-				ExpenseFilter filter = new ExpenseFilter();
-				Account account = accounts.get(i);
-				
-				filter.accountId = account.id;
-				filter.startDate = CashLensUtils.startOfThisMonth(account.monthStartDay); 
-				filter.endDate = CashLensUtils.startOfNextMonth(account.monthStartDay);
-				
-				mFilters[i] = filter;
-			}
-			break;
-		}
+		if (filterType == ExpenseFilterType.CUSTOM)
+			mCustomFilter = customFilter;
 	}
 
-	public void setCustomFilter(ExpenseFilter filter)
-	{
-		mFilterType = FilterType.CUSTOM;
-		mFilters = new ExpenseFilter[1];
-		mFilters[0] = filter;
-	}
-	
 	protected String[] expensesToStrings()
 	{
 		if (mExpenses == null)
@@ -157,7 +97,9 @@ public final class ExpensesView extends ListView
 	
 	public void updateExpenses()
 	{
-		mExpenses = mStorage.readExpenses(mFilters);
+		mStorage.setExpenseFilter(mFilterType, mCustomFilter);
+
+		mExpenses = mStorage.readExpenses(false);
 		
 		ArrayAdapterExpense adapter = new ArrayAdapterExpense(getContext(), mExpenses);
 		setAdapter(adapter);

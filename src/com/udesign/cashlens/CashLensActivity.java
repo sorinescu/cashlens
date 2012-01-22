@@ -17,7 +17,8 @@ package com.udesign.cashlens;
 
 import java.io.IOException;
 
-import com.udesign.cashlens.ExpensesView.FilterType;
+import com.udesign.cashlens.CashLensStorage.ExpenseFilter;
+import com.udesign.cashlens.CashLensStorage.ExpenseFilterType;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -163,15 +164,15 @@ public final class CashLensActivity extends Activity
 			}
 		};
 		
-		FilterType currentFilter = settings.getExpenseFilterType();
+		ExpenseFilterType currentFilter = settings.getExpenseFilterType();
 
 		mFlipExpenses.removeAllViews();
 		
-		for (int i=0; i<FilterType.values().length; ++i)
+		for (int i=0; i<ExpenseFilterType.values().length; ++i)
 		{
-			FilterType filterType = FilterType.values()[i];
+			ExpenseFilterType filterType = ExpenseFilterType.values()[i];
 			
-			if (filterType == FilterType.NONE)
+			if (filterType == ExpenseFilterType.NONE)
 				continue;	// ignore empty filter
 			
 			if (!settings.getExpenseFilterViewEnabled(filterType))
@@ -205,10 +206,11 @@ public final class CashLensActivity extends Activity
 			expenses.setOnHierarchyChangeListener(onHierarchyChangeListener);
 
 			// Initialize expense views in the order specified in settings
-			if (filterType == FilterType.CUSTOM)
-				expenses.setCustomFilter(settings.getLastUsedCustomExpenseFilter());
-			else
-				expenses.setFilterType(filterType);
+			ExpenseFilter customFilter = null;
+			if (filterType == ExpenseFilterType.CUSTOM)
+				customFilter = settings.getLastUsedCustomExpenseFilter();
+			
+			expenses.setFilterType(filterType, customFilter);
 			
 			// Add view to view flipper, in the correct order
 			mFlipExpenses.addView(layout);
@@ -219,15 +221,20 @@ public final class CashLensActivity extends Activity
 		}
 	}
 	
-	private void updateCurrentExpensesView()
+	private ExpensesView getCurrentExpensesView()
 	{
 		RelativeLayout layout = (RelativeLayout)mFlipExpenses.getCurrentView();
-		ExpensesView expenses = (ExpensesView)layout.getChildAt(0);
+		return (ExpensesView)layout.getChildAt(0);
+	}
+	
+	private void updateCurrentExpensesView()
+	{
+		ExpensesView expenses = getCurrentExpensesView();
 		
 		// Detach expenses list from all the other ExpensesViews 
 		for (int i=0; i<mFlipExpenses.getChildCount(); ++i)
 		{
-			layout = (RelativeLayout)mFlipExpenses.getChildAt(i);
+			RelativeLayout layout = (RelativeLayout)mFlipExpenses.getChildAt(i);
 			ExpensesView otherExpenses = (ExpensesView)layout.getChildAt(0);
 			
 			if (otherExpenses != expenses)
@@ -273,7 +280,7 @@ public final class CashLensActivity extends Activity
 	    case R.id.manage_accounts:
 			Intent manageAccounts = new Intent(CashLensActivity.this,
 					AccountsActivity.class);
-			startActivity(manageAccounts);
+			startActivityForResult(manageAccounts, 0);
 	        return true;
 	        
 	    case R.id.settings:
@@ -365,5 +372,20 @@ public final class CashLensActivity extends Activity
 		}
 		
 		super.onWindowFocusChanged(hasFocus);
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onActivityResult(int, int, android.content.Intent)
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
+		super.onActivityResult(requestCode, resultCode, data);
+		
+		// This method is called after the Accounts activity returns.
+		// If an account was modified/added/deleted, we need to recompute the
+		// expense filters
+		ExpensesView expenses = getCurrentExpensesView();
+		expenses.updateExpenses();
 	}
 }

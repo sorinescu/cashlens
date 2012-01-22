@@ -4,71 +4,16 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
-	<LinearLayout
-	    android:layout_width="match_parent"
-	    android:layout_height="wrap_content"
-	    android:orientation="horizontal" >
-	    
-	    <Button 
-	        android:id="@+id/btnSave"
-	        android:layout_width="match_parent"
-	        android:layout_height="wrap_content"
-	        android:layout_weight="1"
-	        android:text="@string/save" />
-	    <Button 
-	        android:id="@+id/btnDiscard"
-	        android:layout_width="match_parent"
-	        android:layout_height="wrap_content"
-	        android:layout_weight="1"
-	        android:text="@string/discard" />
-	    	    
-	</LinearLayout>
-	
-	<LinearLayout
-	    android:layout_width="match_parent"
-	    android:layout_height="match_parent"
-	    android:orientation="vertical" >
-	    
-		<TextView
-	        android:id="@+id/textView1"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="@string/name"
-	        android:textAppearance="?android:attr/textAppearanceLarge" />
-	
-	    <EditText
-	        android:id="@+id/accountTxt"
-	        android:layout_width="match_parent"
-	        android:layout_height="wrap_content" >
-	
-	        <requestFocus />
-	    </EditText>
-	
-	    <TextView
-	        android:id="@+id/textView2"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="@string/currency"
-	        android:textAppearance="?android:attr/textAppearanceLarge" />
-	
-	    <Spinner
-	        android:id="@+id/spinCurrency"
-	        android:layout_width="match_parent"
-	        android:layout_height="wrap_content" />
+    <Button 
+        android:id="@+id/btnSave"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:text="@string/save" />
 
-	    <TextView
-	        android:id="@+id/textView3"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="@string/month_start"
-	        android:textAppearance="?android:attr/textAppearanceLarge" />
-	
-		<EditText 
-		    android:id="@+id/monthStartTxt"
-		    android:layout_width="match_parent"
-		    android:layout_height="wrap_content"
-		    android:digits="0123456789" />
-		   	    
-	</LinearLayout>
-
+    <ListView 
+        android:id="@android:id/list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+        
 </LinearLayout>

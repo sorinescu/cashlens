@@ -107,7 +107,14 @@ public final class CashLensUtils
 	
 	public static Date startOfDay(Date origDate)
 	{
-		return new Date(origDate.getYear(), origDate.getMonth(), origDate.getDate());
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(origDate);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.SECOND, 0);
+		cal.set(Calendar.MILLISECOND, 0);
+		
+		return cal.getTime();
 	}
 	
 	public static Date startOfNextDay(Date origDate)
@@ -124,10 +131,6 @@ public final class CashLensUtils
 		Calendar cal = Calendar.getInstance();
 
 		int firstDay = cal.getFirstDayOfWeek();
-		
-		if (firstDay > cal.get(Calendar.DAY_OF_WEEK))
-			cal.add(Calendar.WEEK_OF_YEAR, -1);
-
 		cal.set(Calendar.DAY_OF_WEEK, firstDay);
 
 		return startOfDay(cal.getTime());

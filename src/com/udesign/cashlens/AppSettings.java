@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.Locale;
 
 import com.udesign.cashlens.CashLensStorage.ExpenseFilter;
+import com.udesign.cashlens.CashLensStorage.ExpenseFilterType;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -152,15 +153,15 @@ final class AppSettings
 	/**
 	 * @return the expenseFilterType
 	 */
-	public ExpensesView.FilterType getExpenseFilterType()
+	public ExpenseFilterType getExpenseFilterType()
 	{
-		int ordinal = mSharedPrefs.getInt("expenseFilterType", ExpensesView.FilterType.MONTH.ordinal());
-		return ExpensesView.FilterType.values()[ordinal];
+		int ordinal = mSharedPrefs.getInt("expenseFilterType", ExpenseFilterType.MONTH.ordinal());
+		return ExpenseFilterType.values()[ordinal];
 	}
 	/**
 	 * @param filterType the expenseFilterType to set
 	 */
-	public void setExpenseFilterType(ExpensesView.FilterType filterType)
+	public void setExpenseFilterType(ExpenseFilterType filterType)
 	{
 		mSharedPrefsEditor.putInt("expenseFilterType", filterType.ordinal());
 		mSharedPrefsEditor.commit();
@@ -231,7 +232,7 @@ final class AppSettings
 	/**
 	 * @return the filterViewsOrder
 	 */
-	public boolean getExpenseFilterViewEnabled(ExpensesView.FilterType filterType) 
+	public boolean getExpenseFilterViewEnabled(ExpenseFilterType filterType) 
 	{
 		switch (filterType)
 		{
@@ -251,7 +252,7 @@ final class AppSettings
 	/**
 	 * @param filterViewsOrder the filterViewsOrder to set
 	 */
-	public void setExpenseFilterViewEnabled(ExpensesView.FilterType filterType, boolean enabled) 
+	public void setExpenseFilterViewEnabled(ExpenseFilterType filterType, boolean enabled) 
 	{
 		switch (filterType)
 		{
