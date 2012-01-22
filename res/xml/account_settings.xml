@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:numberpicker="http://schemas.android.com/apk/res/com.udesign.cashlens" >
+
+    <EditTextPreference
+        android:key="name"
+        android:title="@string/name"
+        android:persistent="false" />
+    
+    <ListPreference
+        android:key="currency"
+        android:title="@string/currency"
+        android:persistent="false" />
+    
+    <com.quietlycoding.android.picker.NumberPickerPreference
+        android:key="monthStart"
+        android:title="@string/month_start"
+        numberpicker:startRange="1"
+        numberpicker:endRange="31"
+        numberpicker:defaultValue="1"
+        android:persistent="false" />
+
+</PreferenceScreen>
