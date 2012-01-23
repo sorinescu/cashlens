@@ -17,6 +17,7 @@ package com.udesign.cashlens;
 
 import java.io.IOException;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.udesign.cashlens.CashLensStorage.Expense;
@@ -37,6 +38,7 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 	ArrayListWithNotify.OnDataChangedListener
 {
 	protected ExpenseThumbnailCache mThumbCache;
+	protected ArrayList<ExpenseThumbnail> mThumbs;
 	protected ArrayListWithNotify<Expense> mItems;
 	protected Context mContext;
 	protected LayoutInflater mInflater;
@@ -52,7 +54,9 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 		mItems = items;
 		mContext = context;
 		mInflater = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		
 		mThumbCache = ExpenseThumbnailCache.instance(context.getApplicationContext());
+		mThumbs = new ArrayList<ExpenseThumbnail>();
 		
 		mTotalPerCurrency = new HashMap<Integer,Integer>();
 		mTotalPerAccount = new HashMap<Integer,Integer>();
@@ -132,7 +136,7 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 			ImageView image = (ImageView)rowLayout.findViewById(android.R.id.icon1);
 			
 			ExpenseThumbnail thumb = mThumbCache.getThumbnail(expense.thumbnailId, this, image);
-			// TODO remove self from onLoad listener of thumbnail when activity is destroyed
+			mThumbs.add(thumb);
 			
 			try
 			{
@@ -245,5 +249,14 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 		mTotalPerCurrency.clear();
 		mTotalPerAccount.clear();
 		mTotalPosition = -1;
+	}
+	
+	public void recycle()
+	{
+		mItems.removeOnDataChangedListener(this);
+		
+		// We were automatically registered when we got the thumbnail from the cache
+		for (ExpenseThumbnail thumb : mThumbs)
+			thumb.unregisterOnLoadedListener(this);
 	}
 }

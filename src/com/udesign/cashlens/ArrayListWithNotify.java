@@ -49,8 +49,8 @@ public class ArrayListWithNotify<T> extends ArrayList<T>
 	}
 	
 	public synchronized void removeOnDataChangedListener(OnDataChangedListener listener) {
-		mDataChangedListeners.remove(listener);
-		Log.d(this.getClass().getSimpleName(), "removed on data changed listener " + listener.toString());
+		if (mDataChangedListeners.remove(listener))
+			Log.d(this.getClass().getSimpleName(), "removed on data changed listener " + listener.toString());
 	}
 	
 	private void autoNotifyIfNeeded() {

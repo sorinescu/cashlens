@@ -52,7 +52,7 @@ public class ArrayAdapterIDAndName<T extends ArrayAdapterIDAndName.IDAndName> ex
 		mForcedTextAppearanceResource = resID;
 	}
 	
-	public void release()
+	public void releaseByActivity()
 	{
 		mItems.removeOnDataChangedListener(this);
 	}

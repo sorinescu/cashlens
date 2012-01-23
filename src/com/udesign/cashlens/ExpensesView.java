@@ -30,6 +30,7 @@ public final class ExpensesView extends ListView
 	private ExpenseFilter mCustomFilter;
 	private ExpenseFilterType mFilterType = ExpenseFilterType.NONE;
 	private ArrayListWithNotify<Expense> mExpenses;
+	private ArrayAdapterExpense mExpensesAdapter;
 	
 	private CashLensStorage mStorage = CashLensStorage.instance(getContext().getApplicationContext());
 	
@@ -37,7 +38,7 @@ public final class ExpensesView extends ListView
 	 * @param context
 	 * @throws IOException 
 	 */
-	public ExpensesView(Context context) throws IOException
+	public ExpensesView(Context context) throws IOException, IllegalAccessException
 	{
 		super(context);
 	}
@@ -47,7 +48,7 @@ public final class ExpensesView extends ListView
 	 * @param attrs
 	 * @throws IOException 
 	 */
-	public ExpensesView(Context context, AttributeSet attrs) throws IOException
+	public ExpensesView(Context context, AttributeSet attrs) throws IOException, IllegalAccessException
 	{
 		super(context, attrs);
 	}
@@ -58,7 +59,7 @@ public final class ExpensesView extends ListView
 	 * @param defStyle
 	 * @throws IOException 
 	 */
-	public ExpensesView(Context context, AttributeSet attrs, int defStyle) throws IOException
+	public ExpensesView(Context context, AttributeSet attrs, int defStyle) throws IOException, IllegalAccessException
 	{
 		super(context, attrs, defStyle);
 	}
@@ -91,17 +92,26 @@ public final class ExpensesView extends ListView
 	
 	public void detachExpenses()
 	{
+		if (mExpensesAdapter != null)
+		{
+			mExpensesAdapter.recycle();
+			mExpensesAdapter = null;
+		}
+		
 		setAdapter(null);
 		mExpenses = null;
 	}
 	
-	public void updateExpenses()
+	public void updateExpenses() throws IllegalAccessException
 	{
 		mStorage.setExpenseFilter(mFilterType, mCustomFilter);
 
 		mExpenses = mStorage.readExpenses(false);
 		
-		ArrayAdapterExpense adapter = new ArrayAdapterExpense(getContext(), mExpenses);
-		setAdapter(adapter);
+		if (mExpensesAdapter != null)
+			mExpensesAdapter.recycle();
+		
+		mExpensesAdapter = new ArrayAdapterExpense(getContext(), mExpenses);
+		setAdapter(mExpensesAdapter);
 	}
 }

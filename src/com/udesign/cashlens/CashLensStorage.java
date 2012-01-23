@@ -456,7 +456,7 @@ public final class CashLensStorage
 	}
 
 	public static CashLensStorage instance(Context currentContext)
-			throws IOException
+			throws IOException, IllegalAccessException
 	{
 		// use the global application context for the singleton, not the
 		// received context, which may become unavailable
@@ -487,8 +487,6 @@ public final class CashLensStorage
 
 	public synchronized Expense getExpense(int expenseId)
 	{
-		// TODO this function is limited to the expenses we 
-		// have read through the last readExpenses call; fix this ?
 		for (Expense expense : mExpenses)
 			if (expense.id == expenseId)
 				return expense;
@@ -496,7 +494,7 @@ public final class CashLensStorage
 		return null;
 	}
 
-	private CashLensStorage(Context context) throws IOException
+	private CashLensStorage(Context context) throws IOException, IllegalAccessException
 	{
 		mContext = context;
 
@@ -521,11 +519,17 @@ public final class CashLensStorage
 	public void close()
 	{
 		if (mHelper != null)
+		{
 			mHelper.close();
+			mHelper = null;
+		}
 	}
 
-	protected SQLiteDatabase db()
+	protected SQLiteDatabase db() throws IllegalAccessException
 	{
+		if (mHelper == null)
+			throw new IllegalAccessException("The storage has been closed. Check for close() calls.");
+		
 		return mHelper.getWritableDatabase();
 	}
 
@@ -652,7 +656,7 @@ public final class CashLensStorage
 		}
 	}
 
-	protected void readAccounts()
+	protected void readAccounts() throws IllegalAccessException
 	{
 		Cursor cursor = db().query(AccountsTable.TABLE_NAME, null, null, null,
 				null, null, AccountsTable.NAME);
@@ -792,11 +796,6 @@ public final class CashLensStorage
 		return mCurrencies;
 	}
 
-	public synchronized ArrayAdapterIDAndName<Currency> currenciesAdapter(Context context)
-	{
-		return new ArrayAdapterIDAndName<Currency>(context, mCurrencies);
-	}
-
 	/**
 	 * Saves an expense to the database.
 	 * 
@@ -815,8 +814,9 @@ public final class CashLensStorage
 	 * @param audioFilePath
 	 *            Optional audio file path for expense.
 	 * @throws IOException 
+	 * @throws IllegalAccessException 
 	 */
-	protected void saveExpenseToDB(Expense expense) throws IOException
+	protected void saveExpenseToDB(Expense expense) throws IOException, IllegalAccessException
 	{
 		ContentValues values = new ContentValues();
 		values.put(ExpensesTable.ACCOUNT, expense.accountId);
@@ -840,7 +840,7 @@ public final class CashLensStorage
 	}
 
 	public synchronized void saveExpense(Account account, int amount,
-			Date date, byte[] jpegData) throws IOException
+			Date date, byte[] jpegData) throws IOException, IllegalAccessException
 	{
 		File imageFile = randomFile(storageDirectory(DataType.IMAGE), ".jpeg");
 		FileOutputStream image = new FileOutputStream(imageFile);
@@ -871,7 +871,7 @@ public final class CashLensStorage
 				expense.accountName() + ", amount " + expense.amountToString());
 	}
 
-	public synchronized void updateExpense(Expense expense) throws IOException
+	public synchronized void updateExpense(Expense expense) throws IOException, IllegalAccessException
 	{
 		ContentValues values = new ContentValues();
 		values.put(ExpensesTable.ACCOUNT, expense.accountId);
@@ -899,7 +899,7 @@ public final class CashLensStorage
 		mExpenses.notifyDataChanged();
 	}
 
-	public synchronized void deleteExpense(Expense expense) throws IOException
+	public synchronized void deleteExpense(Expense expense) throws IOException, IllegalAccessException
 	{
 		int affected = db().delete(ExpensesTable.TABLE_NAME,
 				ExpensesTable._ID + "=" + Integer.toString(expense.id), null);
@@ -973,7 +973,7 @@ public final class CashLensStorage
 	}
 	
 	// If filterType is not CUSTOM, customFilter is ignored
-	public synchronized void setExpenseFilter(ExpenseFilterType filterType, ExpenseFilter customFilter)
+	public synchronized void setExpenseFilter(ExpenseFilterType filterType, ExpenseFilter customFilter) throws IllegalAccessException
 	{
 		mExpenseFilterType = filterType;
 		if (filterType == ExpenseFilterType.CUSTOM)
@@ -982,7 +982,7 @@ public final class CashLensStorage
 		recomputeExpenseFilters();
 	}
 	
-	private boolean recomputeExpenseFilters()
+	private boolean recomputeExpenseFilters() throws IllegalAccessException
 	{
 		Calendar cal = Calendar.getInstance();
 		Date now = cal.getTime();
@@ -1049,7 +1049,7 @@ public final class CashLensStorage
 		return false;	// no change
 	}
 
-	public synchronized ArrayListWithNotify<Expense> readExpenses(boolean force)
+	public synchronized ArrayListWithNotify<Expense> readExpenses(boolean force) throws IllegalAccessException
 	{
 		// cache the retrieved expenses locally
 		if (mExpenses == null)
@@ -1180,7 +1180,7 @@ public final class CashLensStorage
 		mExpenses.notifyDataChanged();
 	}
 	
-	public synchronized void addAccount(Account account) throws IOException
+	public synchronized void addAccount(Account account) throws IOException, IllegalAccessException
 	{
 		ContentValues values = new ContentValues();
 		values.put(AccountsTable.NAME, account.name);
@@ -1206,7 +1206,7 @@ public final class CashLensStorage
 		mAccounts.notifyDataChanged();
 	}
 
-	public synchronized void updateAccount(Account account) throws IOException
+	public synchronized void updateAccount(Account account) throws IOException, IllegalAccessException
 	{
 		ContentValues values = new ContentValues();
 		values.put(AccountsTable.NAME, account.name);
@@ -1228,7 +1228,7 @@ public final class CashLensStorage
 		mAccounts.notifyDataChanged();
 	}
 
-	public synchronized void deleteAccount(Account account) throws IOException
+	public synchronized void deleteAccount(Account account) throws IOException, IllegalAccessException
 	{
 		int affected = db().delete(AccountsTable.TABLE_NAME,
 				AccountsTable._ID + "=" + Integer.toString(account.id), null);
@@ -1264,7 +1264,7 @@ public final class CashLensStorage
 		mAccounts.notifyDataChanged();
 	}
 	
-	protected int saveExpenseThumbnail(ExpenseThumbnail.Data thumbData) throws IOException
+	protected int saveExpenseThumbnail(ExpenseThumbnail.Data thumbData) throws IOException, IllegalAccessException
 	{
 		ContentValues values = new ContentValues();
 		values.put(ExpenseThumbnailsTable.DATA_PORTRAIT, thumbData.portraitData);
@@ -1280,7 +1280,7 @@ public final class CashLensStorage
 		return id;
 	}
 
-	public synchronized void loadExpenseThumbnail(ExpenseThumbnail thumb) throws IOException
+	public synchronized void loadExpenseThumbnail(ExpenseThumbnail thumb) throws IOException, IllegalAccessException
 	{
 		Cursor cursor = db().query(ExpenseThumbnailsTable.TABLE_NAME,
 				new String[] { ExpenseThumbnailsTable.DATA_PORTRAIT, ExpenseThumbnailsTable.DATA_LANDSCAPE }, 

@@ -15,7 +15,6 @@
  ******************************************************************************/
 package com.udesign.cashlens;
 
-import java.io.IOException;
 import java.util.HashMap;
 
 import android.content.Context;
@@ -39,7 +38,7 @@ public final class ExpenseThumbnailCache
 			try
 			{
 				storage = CashLensStorage.instance(mContext.getApplicationContext());
-			} catch (IOException e)
+			} catch (Exception e)
 			{
 				e.printStackTrace();
 				return null;
@@ -52,7 +51,7 @@ public final class ExpenseThumbnailCache
 			{
 				storage.loadExpenseThumbnail(thumb);
 				Log.w("LoadThumbnailTask", "Loaded thumbnail with id " + Integer.toString(thumb.id));
-			} catch (IOException e)
+			} catch (Exception e)
 			{
 				e.printStackTrace();
 			}

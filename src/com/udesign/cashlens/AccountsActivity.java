@@ -15,8 +15,6 @@
  ******************************************************************************/
 package com.udesign.cashlens;
 
-import java.io.IOException;
-
 import com.udesign.cashlens.CashLensStorage.Account;
 import com.udesign.cashlens.CashLensStorage.Currency;
 
@@ -40,6 +38,7 @@ public final class AccountsActivity extends Activity
 {
 	private CashLensStorage mStorage;
 	private ListView mAccountsList;
+	private ArrayAdapterAccount mAccountsAdapter;
 	private TextView mNoAccountsText;
 	
 	private static class ArrayAdapterAccount extends ArrayAdapterIDAndName<Account>
@@ -94,7 +93,7 @@ public final class AccountsActivity extends Activity
 		{
 			mStorage = CashLensStorage.instance(this);
 		} 
-		catch (IOException e)
+		catch (Exception e)
 		{
 			e.printStackTrace();
 		}
@@ -102,8 +101,8 @@ public final class AccountsActivity extends Activity
 		mAccountsList = (ListView)findViewById(R.id.lstAccounts);
 		mNoAccountsText = (TextView)findViewById(android.R.id.text1);
 
-		ArrayAdapterAccount adapter = new ArrayAdapterAccount(this, mStorage.getAccounts());
-		mAccountsList.setAdapter(adapter);
+		mAccountsAdapter = new ArrayAdapterAccount(this, mStorage.getAccounts());
+		mAccountsList.setAdapter(mAccountsAdapter);
 		
 		// If there are no more accounts following a delete, show "No accounts" text
 		// instead of list, and viceversa
@@ -179,5 +178,16 @@ public final class AccountsActivity extends Activity
 			mNoAccountsText.setVisibility(View.INVISIBLE);
 			mAccountsList.setVisibility(View.VISIBLE);
 		}
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onDestroy()
+	 */
+	@Override
+	protected void onDestroy()
+	{
+		mAccountsAdapter.releaseByActivity();
+		
+		super.onDestroy();
 	}
 }

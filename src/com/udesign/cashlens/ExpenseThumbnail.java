@@ -95,6 +95,17 @@ public class ExpenseThumbnail
 		}
 	}
 	
+	// Works like the previous function, but for ALL contexts for this listener
+	public synchronized void unregisterOnLoadedListener(OnExpenseThumbnailLoadedListener listener)
+	{
+		for (Iterator<OnLoadedListenerCallback> iter = mOnLoadedListeners.iterator(); iter.hasNext();)
+		{
+			OnLoadedListenerCallback callback = iter.next();
+			if (callback.listener == listener)
+				iter.remove();
+		}
+	}
+	
 	public synchronized void notifyOnLoadedListeners()
 	{
 		for (OnLoadedListenerCallback callback : mOnLoadedListeners)

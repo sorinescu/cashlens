@@ -130,7 +130,7 @@ public final class CashLensActivity extends Activity
 		};
 	}
 	
-	private void initializeExpenses() throws IOException
+	private void initializeExpenses() throws IOException, IllegalAccessException
 	{
 		AppSettings settings = AppSettings.instance(getApplicationContext());
 		
@@ -227,7 +227,7 @@ public final class CashLensActivity extends Activity
 		return (ExpensesView)layout.getChildAt(0);
 	}
 	
-	private void updateCurrentExpensesView()
+	private void updateCurrentExpensesView() throws IllegalAccessException
 	{
 		ExpensesView expenses = getCurrentExpensesView();
 		
@@ -362,13 +362,23 @@ public final class CashLensActivity extends Activity
 		{
 			try {
 				initializeExpenses();
-			} catch (IOException e) {
+				updateCurrentExpensesView();
+			} catch (Exception e) {
 				Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
 				finish();	// exit app
 				return;
 			}
-			
-			updateCurrentExpensesView();
+		}
+		else
+		{
+			// Detach expenses list from all ExpensesViews 
+			for (int i=0; i<mFlipExpenses.getChildCount(); ++i)
+			{
+				RelativeLayout layout = (RelativeLayout)mFlipExpenses.getChildAt(i);
+				ExpensesView expenses = (ExpensesView)layout.getChildAt(0);
+
+				expenses.detachExpenses();
+			}
 		}
 		
 		super.onWindowFocusChanged(hasFocus);
@@ -386,6 +396,32 @@ public final class CashLensActivity extends Activity
 		// If an account was modified/added/deleted, we need to recompute the
 		// expense filters
 		ExpensesView expenses = getCurrentExpensesView();
-		expenses.updateExpenses();
+		try
+		{
+			expenses.updateExpenses();
+		} catch (Exception e) {
+			Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+			finish();	// exit app
+			return;
+		}
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onDestroy()
+	 */
+	@Override
+	protected void onDestroy()
+	{
+		// Make sure we close the DB
+		try
+		{
+			CashLensStorage storage = CashLensStorage.instance(this);
+			storage.close();
+		} catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		super.onDestroy();
 	}
 }

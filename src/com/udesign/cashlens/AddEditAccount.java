@@ -15,8 +15,6 @@
  ******************************************************************************/
 package com.udesign.cashlens;
 
-import java.io.IOException;
-
 import com.quietlycoding.android.picker.NumberPickerPreference;
 import com.udesign.cashlens.CashLensStorage.Account;
 import com.udesign.cashlens.CashLensStorage.Currency;
@@ -62,7 +60,7 @@ public final class AddEditAccount extends PreferenceActivity
 		{
 			mStorage = CashLensStorage.instance(this);
 		} 
-		catch (IOException e)
+		catch (Exception e)
 		{
 			e.printStackTrace();
 			finish();
@@ -95,13 +93,6 @@ public final class AddEditAccount extends PreferenceActivity
 			mAccount = mStorage.getAccount(accountId);
 		
 		mCurrencies = mStorage.getCurencies();
-		mCurrencies.addOnDataChangedListener(new ArrayListWithNotify.OnDataChangedListener()
-		{
-			public void onDataChanged()
-			{
-				populateCurrency();
-			}
-		});
 		
 		OnPreferenceChangeListener onPreferenceChangeListener = new OnPreferenceChangeListener()
 		{
@@ -239,7 +230,7 @@ public final class AddEditAccount extends PreferenceActivity
 				mStorage.updateAccount(mAccount);
 			
 			mShouldSave = false;	// don't try to save twice
-		} catch (IOException e)
+		} catch (Exception e)
 		{
 			e.printStackTrace();
 			Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
@@ -315,7 +306,7 @@ public final class AddEditAccount extends PreferenceActivity
 			Toast.makeText(this, R.string.account_deleted, Toast.LENGTH_SHORT).show();
 			finish();
 		} 
-		catch (IOException e)
+		catch (Exception e)
 		{
 			e.printStackTrace();
 		}

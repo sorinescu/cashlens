@@ -15,7 +15,6 @@
  ******************************************************************************/
 package com.udesign.cashlens;
 
-import java.io.IOException;
 import java.text.DecimalFormatSymbols;
 
 import com.udesign.cashlens.CashLensStorage.Account;
@@ -71,7 +70,7 @@ public class EditExpenseActivity extends Activity
 		try
 		{
 			mStorage = CashLensStorage.instance(getApplicationContext());
-		} catch (IOException e)
+		} catch (Exception e)
 		{
 			e.printStackTrace();
 			Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
@@ -190,7 +189,7 @@ public class EditExpenseActivity extends Activity
 					mExpense.copyFrom(mExpenseMod);
 					mStorage.updateExpense(mExpense);
 					finish();
-				} catch (IOException e)
+				} catch (Exception e)
 				{
 					e.printStackTrace();
 				}
@@ -211,5 +210,17 @@ public class EditExpenseActivity extends Activity
 	void updateSaveEnabled()
 	{
 		mSaveButton.setEnabled(!mExpense.equals(mExpenseMod));
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onDestroy()
+	 */
+	@Override
+	protected void onDestroy()
+	{
+		// Make sure the data changed listeners are unregistered
+		mAccountsAdapter.releaseByActivity();
+		
+		super.onDestroy();
 	}
 }

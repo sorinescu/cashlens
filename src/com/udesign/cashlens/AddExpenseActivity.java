@@ -86,7 +86,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		try 
 		{
 			mStorage = CashLensStorage.instance(getApplicationContext());
-		} catch (IOException e) 
+		} catch (Exception e) 
 		{
 			e.printStackTrace();
 		}
@@ -295,11 +295,8 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	        mCamera = null;
 		}
 		
-		if (mStorage != null)
-		{
-			mStorage.close();
-			mStorage = null;
-		}
+		// Make sure the data changed listeners are unregistered
+		mAccountsAdapter.releaseByActivity();
 
 		super.onDestroy();
 	}
@@ -520,7 +517,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 					
 					mStorage.saveExpense(account, getExpenseFixedPoint(), new Date(), data);
 				} 
-				catch (IOException e) 
+				catch (Exception e) 
 				{
 					e.printStackTrace();
 					return e.getLocalizedMessage();
@@ -548,7 +545,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 					// Show success or error message and notify listeners that a new expense may be available
 					Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
 					storage.notifyExpensesChanged();
-				} catch (IOException e)
+				} catch (Exception e)
 				{
 					e.printStackTrace();
 					Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();

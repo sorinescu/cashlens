@@ -15,7 +15,6 @@
  ******************************************************************************/
 package com.udesign.cashlens;
 
-import java.io.IOException;
 import java.text.DateFormat;
 
 import com.udesign.cashlens.CashLensStorage.Expense;
@@ -62,7 +61,7 @@ public final class ViewExpenseActivity extends Activity
 		try
 		{
 			mStorage = CashLensStorage.instance(getApplicationContext());
-		} catch (IOException e)
+		} catch (Exception e)
 		{
 			e.printStackTrace();
 			Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
@@ -189,7 +188,7 @@ public final class ViewExpenseActivity extends Activity
 			
 			finish();
 		} 
-		catch (IOException e)
+		catch (Exception e)
 		{
 			e.printStackTrace();
 		}
