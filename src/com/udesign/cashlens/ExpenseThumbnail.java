@@ -19,6 +19,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.concurrent.locks.ReentrantLock;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -31,16 +32,19 @@ import android.util.Log;
 public class ExpenseThumbnail
 {
 	protected Context mContext;
-	protected Bitmap mBitmapPortrait = null;
-	protected Bitmap mBitmapLandscape = null;
+	protected Bitmap mBitmapPortrait;
+	protected Bitmap mBitmapLandscape;
 	protected ArrayList<OnLoadedListenerCallback> mOnLoadedListeners = new ArrayList<OnLoadedListenerCallback>();
+	protected ReentrantLock mBitmapLock = new ReentrantLock();
 	
 	public int id;
 	
+	protected final static int THUMBS_PER_SCREEN = 8;
+	
 	public static class Data
 	{
-		byte[] portraitData = null;
-		byte[] landscapeData = null;
+		byte[] portraitData;
+		byte[] landscapeData;
 	}
 	
 	public ExpenseThumbnail(Context context, int id)
@@ -71,10 +75,14 @@ public class ExpenseThumbnail
 		if (thumb == null)
 			throw new IOException("Couldn't decode thumbnail");
 		
+		mBitmapLock.lock();
+		
 		if (forPortrait)
 			mBitmapPortrait = thumb;
 		else
 			mBitmapLandscape = thumb;
+		
+		mBitmapLock.unlock();
 	}
 	
 	public synchronized void registerOnLoadedListener(OnExpenseThumbnailLoadedListener listener, Object context)
@@ -110,15 +118,25 @@ public class ExpenseThumbnail
 	{
 		for (OnLoadedListenerCallback callback : mOnLoadedListeners)
 		{
-			Log.d("Thumbnail", "thumb id " + Integer.toString(id) + " notifying load listener " + callback.listener.toString());
+			Log.d("Thumbnail", "thumb id " + Integer.toString(id) + " notifying load listener " 
+					+ callback.listener.toString() + " with context " + callback.context.toString());
 			callback.listener.onExpenseThumbnailLoaded(this, callback.context);
 		}
 	}
 
-	public Bitmap asBitmap(boolean forPortrait) throws IOException
+	public synchronized Bitmap asBitmap(boolean forPortrait) throws IOException
 	{
+		Bitmap bmp;
+		
+		// Needs both "sycnhronized" and mLock.lock(), to protect against callbacks and
+		// against decodeFromByteArray
+		mBitmapLock.lock();	
+		
 		createBitmapIfNeeded();
-		return (forPortrait || mBitmapLandscape == null) ? mBitmapPortrait : mBitmapLandscape;
+		bmp = (forPortrait || mBitmapLandscape == null) ? mBitmapPortrait : mBitmapLandscape;
+		
+		mBitmapLock.unlock();
+		return bmp;
 	}
 	
 	public static Data createFromJPEG(Context context, byte[] jpegData, String jpegPath) throws IOException
@@ -164,8 +182,8 @@ public class ExpenseThumbnail
 					break;
 			}
 	
-			// Fit 10 vertical thumbnails per screen
-			height /= 10;
+			// Fit N vertical thumbnails per screen
+			height /= THUMBS_PER_SCREEN;
 			
 			// scale thumbnail
 			Log.d("ExpenseThumbnail", "creating a thumbnail with width " + Integer.toString(width) + 
