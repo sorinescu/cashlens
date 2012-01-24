@@ -167,7 +167,11 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 
 	public void onDataChanged()
 	{
+		Log.d("onDataChanged", "invalidating sums and releasing thumbnails");
+		
 		invalidateSums();
+		releaseThumbnails();
+		
 		notifyDataSetChanged();
 	}
 	
@@ -255,8 +259,15 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 	{
 		mItems.removeOnDataChangedListener(this);
 		
+		releaseThumbnails();
+	}
+	
+	protected void releaseThumbnails()
+	{
 		// We were automatically registered when we got the thumbnail from the cache
 		for (ExpenseThumbnail thumb : mThumbs)
 			thumb.unregisterOnLoadedListener(this);
+		
+		mThumbs.clear();
 	}
 }
