@@ -101,7 +101,9 @@ public final class ExpenseThumbnailCache
 		if (onLoadedListener != null)
 		{
 			thumb.registerOnLoadedListener(onLoadedListener, onLoadedContext);
-			Log.d("ThumbCache", "thumb id " + Integer.toString(thumb.id) + " has new load listener " + onLoadedListener.toString());
+			Log.d("ThumbCache", "thumb id " + Integer.toString(thumb.id) + " has new load listener " 
+					+ onLoadedListener.toString() + " with context " 
+					+ (onLoadedContext == null ? "<null>" : onLoadedContext.toString()));
 		}
 
 		LoadThumbnailTask task = new LoadThumbnailTask();
