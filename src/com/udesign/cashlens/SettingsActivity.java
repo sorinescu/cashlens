@@ -23,8 +23,10 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.hardware.Camera;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
+import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 
@@ -33,9 +35,10 @@ public final class SettingsActivity extends PreferenceActivity
 {
 	private Preference mJpegQuality;
 	private ListPreference mJpegPictureSize;
-	//private CheckBoxPreference mMonthViewEnabled;
-	//private CheckBoxPreference mDayViewEnabled;
-	//private CheckBoxPreference mCustomViewEnabled;
+	private CheckBoxPreference mMonthViewEnabled;
+	private CheckBoxPreference mWeekViewEnabled;
+	private CheckBoxPreference mDayViewEnabled;
+	private CheckBoxPreference mCustomViewEnabled;
 	
 	/* (non-Javadoc)
 	 * @see android.preference.PreferenceActivity#onCreate(android.os.Bundle)
@@ -49,9 +52,38 @@ public final class SettingsActivity extends PreferenceActivity
 		mJpegQuality = findPreference("jpegQuality");
 		mJpegPictureSize = (ListPreference)findPreference("jpegPictureSize");
 		
-		//mMonthViewEnabled = (CheckBoxPreference)findPreference("expenseFilterMonthEnabled");
-		//mDayViewEnabled = (CheckBoxPreference)findPreference("expenseFilterDayEnabled");
-		//mCustomViewEnabled = (CheckBoxPreference)findPreference("expenseFilterCustomEnabled");
+		mMonthViewEnabled = (CheckBoxPreference)findPreference("expenseFilterMonthEnabled");
+		mWeekViewEnabled = (CheckBoxPreference)findPreference("expenseFilterWeekEnabled");
+		mDayViewEnabled = (CheckBoxPreference)findPreference("expenseFilterDayEnabled");
+		mCustomViewEnabled = (CheckBoxPreference)findPreference("expenseFilterCustomEnabled");
+		
+		OnPreferenceChangeListener onPreferenceChangeListener = new OnPreferenceChangeListener()
+		{
+			public boolean onPreferenceChange(Preference preference, Object newValue)
+			{
+				// At least one view must be enabled; prevent value change if no view is enabled
+				// after newValue is set
+				boolean oneEnabled = false;
+				
+				SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SettingsActivity.this);
+				
+				if (mMonthViewEnabled != preference)
+					oneEnabled |= prefs.getBoolean(mMonthViewEnabled.getKey(), true);
+				if (mWeekViewEnabled != preference)
+					oneEnabled |= prefs.getBoolean(mWeekViewEnabled.getKey(), true);
+				if (mDayViewEnabled != preference)
+					oneEnabled |= prefs.getBoolean(mDayViewEnabled.getKey(), true);
+				if (mCustomViewEnabled != preference)
+					oneEnabled |= prefs.getBoolean(mCustomViewEnabled.getKey(), true);
+				
+				return oneEnabled || (Boolean)newValue; 
+			}
+		};
+		
+		mMonthViewEnabled.setOnPreferenceChangeListener(onPreferenceChangeListener);
+		mWeekViewEnabled.setOnPreferenceChangeListener(onPreferenceChangeListener);
+		mDayViewEnabled.setOnPreferenceChangeListener(onPreferenceChangeListener);
+		mCustomViewEnabled.setOnPreferenceChangeListener(onPreferenceChangeListener);
 		
 		populateJpegPictureSize();
 	}
