@@ -516,15 +516,6 @@ public final class CashLensStorage
 		readCurrencies();
 	}
 
-	public void close()
-	{
-		if (mHelper != null)
-		{
-			mHelper.close();
-			mHelper = null;
-		}
-	}
-
 	protected SQLiteDatabase db() throws IllegalAccessException
 	{
 		if (mHelper == null)
