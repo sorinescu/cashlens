@@ -58,6 +58,9 @@ public final class CashLensActivity extends Activity
     private static final int SWIPE_MIN_DISTANCE = 120;
     private static final int SWIPE_MAX_OFF_PATH = 250;
 	private static final int SWIPE_THRESHOLD_VELOCITY = 200;
+	
+	private static final int RESULT_CODE_SETTINGS = 1;
+	private static final int RESULT_CODE_ACCOUNTS = 2;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -128,11 +131,23 @@ public final class CashLensActivity extends Activity
 				return onTouchEvent(event);
 			}
 		};
+		
+		try {
+			initializeExpenses();
+			updateCurrentExpensesView();
+		} catch (Exception e) {
+			Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+			finish();	// exit app
+			return;
+		}
 	}
 	
 	private void initializeExpenses() throws IOException, IllegalAccessException
 	{
 		AppSettings settings = AppSettings.instance(getApplicationContext());
+		
+		// First make sure old views are detached (remove dangling listeners)
+		detachAllExpensesViews();
 		
 		// These listeners will be applied to all expense views
 		OnItemClickListener onItemClickListener = new OnItemClickListener()
@@ -280,13 +295,13 @@ public final class CashLensActivity extends Activity
 	    case R.id.manage_accounts:
 			Intent manageAccounts = new Intent(CashLensActivity.this,
 					AccountsActivity.class);
-			startActivityForResult(manageAccounts, 0);
+			startActivityForResult(manageAccounts, RESULT_CODE_ACCOUNTS);
 	        return true;
 	        
 	    case R.id.settings:
 			Intent settings = new Intent(CashLensActivity.this,
 					SettingsActivity.class);
-			startActivity(settings);
+			startActivityForResult(settings, RESULT_CODE_SETTINGS);
 	        return true;
 	        
 	    default:
@@ -353,13 +368,32 @@ public final class CashLensActivity extends Activity
 	}
 
 	/* (non-Javadoc)
-	 * @see android.app.Activity#onWindowFocusChanged(boolean)
+	 * @see android.app.Activity#onActivityResult(int, int, android.content.Intent)
 	 */
 	@Override
-	public void onWindowFocusChanged(boolean hasFocus)
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
-		if (hasFocus)
+		super.onActivityResult(requestCode, resultCode, data);
+		
+		// This method is called after the Accounts or Settings activity returns.
+		
+		if (requestCode == RESULT_CODE_ACCOUNTS)
 		{
+			// If an account was modified/added/deleted, we need to recompute the
+			// expense filters
+			ExpensesView expenses = getCurrentExpensesView();
+			try
+			{
+				expenses.updateExpenses();
+			} catch (Exception e) {
+				Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+				finish();	// exit app
+				return;
+			}
+		}
+		else if (requestCode == RESULT_CODE_SETTINGS)
+		{
+			// The user may have added/removed displayable expense views; reinitialize
 			try {
 				initializeExpenses();
 				updateCurrentExpensesView();
@@ -369,58 +403,27 @@ public final class CashLensActivity extends Activity
 				return;
 			}
 		}
-		else
-		{
-			// Detach expenses list from all ExpensesViews 
-			for (int i=0; i<mFlipExpenses.getChildCount(); ++i)
-			{
-				RelativeLayout layout = (RelativeLayout)mFlipExpenses.getChildAt(i);
-				ExpensesView expenses = (ExpensesView)layout.getChildAt(0);
-
-				expenses.detachExpenses();
-			}
-		}
-		
-		super.onWindowFocusChanged(hasFocus);
 	}
 
-	/* (non-Javadoc)
-	 * @see android.app.Activity#onActivityResult(int, int, android.content.Intent)
-	 */
-	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	protected void detachAllExpensesViews()
 	{
-		super.onActivityResult(requestCode, resultCode, data);
-		
-		// This method is called after the Accounts activity returns.
-		// If an account was modified/added/deleted, we need to recompute the
-		// expense filters
-		ExpensesView expenses = getCurrentExpensesView();
-		try
+		// Detach expenses list from all ExpensesViews 
+		for (int i=0; i<mFlipExpenses.getChildCount(); ++i)
 		{
-			expenses.updateExpenses();
-		} catch (Exception e) {
-			Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
-			finish();	// exit app
-			return;
+			RelativeLayout layout = (RelativeLayout)mFlipExpenses.getChildAt(i);
+			ExpensesView expenses = (ExpensesView)layout.getChildAt(0);
+
+			expenses.detachExpenses();
 		}
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see android.app.Activity#onDestroy()
 	 */
 	@Override
 	protected void onDestroy()
 	{
-		// Make sure we close the DB
-		try
-		{
-			CashLensStorage storage = CashLensStorage.instance(this);
-			storage.close();
-		} catch (Exception e)
-		{
-			e.printStackTrace();
-		}
+		detachAllExpensesViews();
 		
 		super.onDestroy();
 	}
