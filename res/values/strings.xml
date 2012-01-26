@@ -43,4 +43,5 @@
     <string name="delete_account_are_you_sure">All expenses belonging to this account will be deleted !\n\nAre you sure ?</string>
     <string name="current_week">Current week</string>
     <string name="not_set">&lt;not set&gt;</string>
+    <string name="fill_amount_before_snapshot">Please enter an amount and select the right account before taking the picture.</string>
 </resources>
