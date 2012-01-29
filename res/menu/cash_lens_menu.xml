@@ -6,6 +6,11 @@
     	android:icon="@drawable/ic_menu_account_list"
     />
     <item 
+        android:id="@+id/custom_filter" 
+        android:title="@string/custom_filter"
+    	android:icon="@android:drawable/ic_menu_search"
+        />
+    <item 
     	android:id="@+id/settings" 
     	android:title="@string/settings" 
     	android:icon="@android:drawable/ic_menu_preferences"

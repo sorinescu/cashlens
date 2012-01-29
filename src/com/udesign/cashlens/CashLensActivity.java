@@ -61,6 +61,7 @@ public final class CashLensActivity extends Activity
 	
 	private static final int RESULT_CODE_SETTINGS = 1;
 	private static final int RESULT_CODE_ACCOUNTS = 2;
+	private static final int RESULT_CODE_CUSTOM_FILTER = 3;
 
 	/** Called when the activity is first created. */
 	@Override
@@ -223,7 +224,7 @@ public final class CashLensActivity extends Activity
 			// Initialize expense views in the order specified in settings
 			ExpenseFilter customFilter = null;
 			if (filterType == ExpenseFilterType.CUSTOM)
-				customFilter = settings.getLastUsedCustomExpenseFilter();
+				customFilter = settings.getCustomExpenseFilter();
 			
 			expenses.setFilterType(filterType, customFilter);
 			
@@ -296,6 +297,12 @@ public final class CashLensActivity extends Activity
 			Intent manageAccounts = new Intent(CashLensActivity.this,
 					AccountsActivity.class);
 			startActivityForResult(manageAccounts, RESULT_CODE_ACCOUNTS);
+	        return true;
+	        
+	    case R.id.custom_filter:
+			Intent customFilter = new Intent(CashLensActivity.this,
+					CustomExpenseFilterActivity.class);
+			startActivityForResult(customFilter, RESULT_CODE_CUSTOM_FILTER);
 	        return true;
 	        
 	    case R.id.settings:
