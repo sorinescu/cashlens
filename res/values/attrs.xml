@@ -4,4 +4,8 @@
          <attr name="min" format="integer" min="0" />
          <attr name="units" format="string" localization="suggested" />
      </declare-styleable>
+    <declare-styleable name="ListPreferenceMultiSelect">
+         <attr format="string" name="checkAll" />
+         <attr format="string" name="separator" />
+    </declare-styleable>
 </resources>
