@@ -92,7 +92,6 @@ final class AppSettings
 				return date;
 			} catch (ParseException e)
 			{
-				e.printStackTrace();
 				return null;
 			}
 		}
@@ -115,7 +114,7 @@ final class AppSettings
 	public static AppSettings instance(Context context)
 	{
 		if (mInstance == null)
-			mInstance = new AppSettings(context);
+			mInstance = new AppSettings(context.getApplicationContext());
 		
 		return mInstance;
 	}
@@ -167,25 +166,53 @@ final class AppSettings
 		mSharedPrefsEditor.commit();
 	}
 	/**
-	 * @return the lastUsedCustomExpenseFilter
+	 * @return the customExpenseFilter
 	 */
-	public ExpenseFilter getLastUsedCustomExpenseFilter()
+	public ExpenseFilter getCustomExpenseFilter()
 	{
 		ExpenseFilter filter = new ExpenseFilter();
-		filter.startDate = getDate("lastUsedCustomExpenseFilterStart");
-		filter.endDate = getDate("lastUsedCustomExpenseFilterEnd");
-		filter.accountId = mSharedPrefs.getInt("lastUsedCustomExpenseFilterAccount", 0);
+		
+		if (mSharedPrefs.getBoolean("customExpenseFilterStartEnabled", false))
+			filter.startDate = getDate("customExpenseFilterStart");
+		if (mSharedPrefs.getBoolean("customExpenseFilterEndEnabled", false))
+			filter.endDate = getDate("customExpenseFilterEnd");
+		
+		String[] accounts = mSharedPrefs.getString("customExpenseFilterAccounts", "").split(",");
+		if (accounts.length != 0 && !accounts[0].equals(""))
+		{
+			filter.accountIds = new int[accounts.length];
+			for (int i=0; i<filter.accountIds.length; ++i)
+				filter.accountIds[i] = Integer.parseInt(accounts[i]);
+		}
 		
 		return filter;
 	}
 	/**
-	 * @param filter the lastUsedCustomExpenseFilter to set
+	 * @param filter the customExpenseFilter to set
 	 */
-	public void setLastUsedCustomExpenseFilter(ExpenseFilter filter)
+	public void setCustomExpenseFilter(ExpenseFilter filter)
 	{
-		putDate("lastUsedCustomExpenseFilterStart", filter.startDate);
-		putDate("lastUsedCustomExpenseFilterEnd", filter.endDate);
-		mSharedPrefsEditor.putInt("lastUsedCustomExpenseFilterAccount", filter.accountId);
+		mSharedPrefsEditor.putBoolean("customExpenseFilterStartEnabled", 
+				filter.startDate != null);
+		mSharedPrefsEditor.putBoolean("customExpenseFilterEndEnabled", 
+				filter.endDate != null);
+		
+		putDate("customExpenseFilterStart", filter.startDate);
+		putDate("customExpenseFilterEnd", filter.endDate);
+		
+		if (filter.accountIds != null)
+		{
+			StringBuilder builder = new StringBuilder();
+			
+			builder.append(filter.accountIds[0]);
+			for (int i=1; i<filter.accountIds.length; ++i)
+				builder.append(",").append(filter.accountIds[i]);
+			
+			mSharedPrefsEditor.putString("customExpenseFilterAccounts", builder.toString());
+		}
+		else
+			mSharedPrefsEditor.putString("customExpenseFilterAccounts", "");
+		
 		mSharedPrefsEditor.commit();
 	}
 
