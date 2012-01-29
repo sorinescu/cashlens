@@ -54,7 +54,7 @@ public final class AddEditAccount extends PreferenceActivity
 		super.onCreate(savedInstanceState);
 		
 		addPreferencesFromResource(R.xml.account_settings);
-		setContentView(R.layout.add_edit_account);
+		setContentView(R.layout.add_edit_account);	// for Save button
 		
 		try
 		{
