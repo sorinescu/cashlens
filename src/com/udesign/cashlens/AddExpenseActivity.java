@@ -178,6 +178,8 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		});
 		
 		mSnapshotButton.setOnClickListener(new OnClickListener() {
+			private boolean mToastShown;
+			
 			public void onClick(View v) 
 			{
 				// picture is taken when autofocus is complete
@@ -190,8 +192,11 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 					// will also take the picture once in focus
 					parent.startAutoFocusIfPossible();
 				}
-				else
+				else if (!mToastShown)
+				{
 					Toast.makeText(parent, R.string.fill_amount_before_snapshot, Toast.LENGTH_LONG).show();
+					mToastShown = true;
+				}
 			}
 		});
 		
