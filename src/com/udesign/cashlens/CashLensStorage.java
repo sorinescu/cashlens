@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DecimalFormatSymbols;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -917,13 +918,11 @@ public final class CashLensStorage
 	{
 		Date startDate;
 		Date endDate;
-		int accountId;
+		int[] accountIds;
 
-		/* (non-Javadoc)
-		 * @see java.lang.Object#equals(java.lang.Object)
-		 */
 		@Override
-		public boolean equals(Object obj) {
+		public boolean equals(Object obj)
+		{
 			if (this == obj)
 				return true;
 			if (obj == null)
@@ -931,14 +930,16 @@ public final class CashLensStorage
 			if (getClass() != obj.getClass())
 				return false;
 			ExpenseFilter other = (ExpenseFilter) obj;
-			if (accountId != other.accountId)
+			if (!Arrays.equals(accountIds, other.accountIds))
 				return false;
-			if (endDate == null) {
+			if (endDate == null)
+			{
 				if (other.endDate != null)
 					return false;
 			} else if (!endDate.equals(other.endDate))
 				return false;
-			if (startDate == null) {
+			if (startDate == null)
+			{
 				if (other.startDate != null)
 					return false;
 			} else if (!startDate.equals(other.startDate))
@@ -1009,7 +1010,8 @@ public final class CashLensStorage
 				ExpenseFilter filter = new ExpenseFilter();
 				Account account = mAccounts.get(i);
 				
-				filter.accountId = account.id;
+				filter.accountIds = new int[1];
+				filter.accountIds[0] = account.id;
 				filter.startDate = CashLensUtils.startOfThisMonth(account.monthStartDay); 
 				filter.endDate = CashLensUtils.startOfNextMonth(account.monthStartDay);
 				
@@ -1024,7 +1026,7 @@ public final class CashLensStorage
 			Log.d("recomputeExpenseFilters", "filters have changed !");
 			for (int i=0; i<filters.length; ++i)
 				Log.d("recomputeExpenseFilters", "filter " + Integer.toString(i) +
-						": account=" + Integer.toString(filters[i].accountId) +
+						": account0=" + (filters[i].accountIds != null ? filters[i].accountIds[0] : 0) +
 						", startDate=" + filters[i].startDate.toLocaleString() +
 						", endDate=" + filters[i].endDate.toLocaleString());
 			
@@ -1057,7 +1059,7 @@ public final class CashLensStorage
 			return mExpenses;	// return cached copy; should be the same
 		}
 		
-		String cond = "";
+		StringBuilder cond = new StringBuilder();
 		boolean needOr = false;
 		
 		if (mExpenseFilters != null)
@@ -1065,31 +1067,41 @@ public final class CashLensStorage
 			for (int i=0; i<mExpenseFilters.length; ++i)
 			{
 				ExpenseFilter filter = mExpenseFilters[i];
-				String localCond = "";
+				StringBuilder localCond = new StringBuilder();
 			
 				if (filter.startDate != null)
-					localCond = ExpensesTable.DATE + ">=" + dateToUTCInt(filter.startDate);
+					localCond.append(ExpensesTable.DATE).append(">=").append(dateToUTCInt(filter.startDate));
 				
 				if (filter.endDate != null)
 				{
 					if (localCond.length() > 0)
-						localCond += " AND ";
-					localCond += ExpensesTable.DATE + "<" + dateToUTCInt(filter.endDate);
+						localCond.append(" AND ");
+					localCond.append(ExpensesTable.DATE).append("<").append(dateToUTCInt(filter.endDate));
 				}
 				
-				if (filter.accountId != 0)
+				if (filter.accountIds != null)
 				{
 					if (localCond.length() > 0)
-						localCond += " AND ";
-					localCond += ExpensesTable.ACCOUNT + "=" + Integer.toString(filter.accountId);
+						localCond.append(" AND ");
+					
+					localCond.append("(");
+					for (int j=0; j<filter.accountIds.length; ++j)
+					{
+						if (j != 0)
+							localCond.append(" OR ");
+						
+						localCond.append(ExpensesTable.ACCOUNT).append("=").append(Integer.toString(filter.accountIds[j]));
+					}
+					
+					localCond.append(")");
 				}
 	
 				if (localCond.length() > 0)
 				{
 					if (needOr)
-						cond += " OR ";
+						cond.append(" OR ");
 		
-					cond += "(" + localCond + ")";
+					cond.append("(").append(localCond).append(")");
 					needOr = true;
 				}
 			}
@@ -1099,7 +1111,7 @@ public final class CashLensStorage
 		
 		Log.d("readExpenses", "Doing read; filter is: " + cond);
 		
-		Cursor cursor = db().query(ExpensesTable.TABLE_NAME, null, cond,
+		Cursor cursor = db().query(ExpensesTable.TABLE_NAME, null, cond.toString(),
 				null, null, null, ExpensesTable.DATE);
 
 		int idIndex = cursor.getColumnIndex(ExpensesTable._ID);
@@ -1144,9 +1156,18 @@ public final class CashLensStorage
 		{
 			ExpenseFilter filter = mExpenseFilters[i];
 			
-			// if filter.accountId == 0, any account matches
-			if (filter.accountId != 0 && expense.accountId != filter.accountId)
-				continue;
+			// if filter.accountIds is null, any account matches
+			if (filter.accountIds != null)
+			{
+				int j;
+				
+				for (j=0; j<filter.accountIds.length; ++j)
+					if (expense.accountId == filter.accountIds[j])
+						break;
+
+				if (j == filter.accountIds.length)	// id not found
+					continue;
+			}
 			
 			// if filter.startDate == null, any start date matches
 			if (filter.startDate != null && expense.date.compareTo(filter.startDate) < 0)
