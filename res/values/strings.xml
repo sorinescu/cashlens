@@ -44,4 +44,20 @@
     <string name="current_week">Current week</string>
     <string name="not_set">&lt;not set&gt;</string>
     <string name="fill_amount_before_snapshot">Please enter an amount and select the right account before taking the picture.</string>
+    <string name="custom_filter">Custom filter</string>
+    <string name="snapshot_params">Snapshot parameters</string>
+    <string name="jpeg_quality">JPEG quality</string>
+    <string name="picture_size">Picture size</string>
+    <string name="expense_views">Expense views</string>
+    <string name="month_view">Month view</string>
+    <string name="week_view">Week view</string>
+    <string name="day_view">Day view</string>
+    <string name="custom_period_view">Custom period view</string>
+    <string name="include_accounts">Include accounts</string>
+    <string name="no_accounts_included">No account is included</string>
+    <string name="start_date">Start date</string>
+    <string name="end_date">End date</string>
+    <string name="select_start_date">Select start date&#8230;</string>
+    <string name="select_end_date">Select end date&#8230;</string>
+    <string name="accounts_included">\u0020account(s) are included</string>
 </resources>
