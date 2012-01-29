@@ -49,6 +49,10 @@
             android:label="@string/settings"
             android:name=".SettingsActivity" >
         </activity>
+        <activity
+            android:label="@string/custom_filter"
+            android:name=".CustomExpenseFilterActivity" >
+        </activity>
         </application>
 
 </manifest>
