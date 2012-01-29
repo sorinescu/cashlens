@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:udesign="http://schemas.android.com/apk/res/com.udesign.cashlens" >
+    <com.udesign.cashlens.ListPreferenceMultiSelect android:title="@string/include_accounts" android:key="customExpenseFilterAccounts" android:summary="@string/no_accounts_included" udesign:separator="," />
+    <CheckBoxPreference android:key="customExpenseFilterStartEnabled" android:title="@string/start_date" android:dependency="customExpenseFilterAccounts"/>
+    <com.udesign.cashlens.DatePreference android:key="customExpenseFilterStart" android:title="@string/select_start_date" android:dependency="customExpenseFilterStartEnabled"/>
+    <CheckBoxPreference android:key="customExpenseFilterEndEnabled" android:title="@string/end_date"/>
+    <com.udesign.cashlens.DatePreference android:key="customExpenseFilterEnd" android:title="@string/select_end_date" android:dependency="customExpenseFilterEndEnabled"/>
+</PreferenceScreen>
