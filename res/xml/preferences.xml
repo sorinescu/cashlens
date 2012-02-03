@@ -20,6 +20,24 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/user_interface" >
+        
+        <net.margaritov.preference.colorpicker.ColorPickerPreference
+    		android:key="expenseTextColor"
+    		android:title="@string/expense_text_color"
+    		android:defaultValue="@android:color/white"
+    		alphaSlider="false"	/>
+        
+        <!-- 
+        <net.margaritov.preference.colorpicker.ColorPickerPreference
+    		android:key="expenseOutlineColor"
+    		android:title="@string/expense_outline_color"
+    		android:defaultValue="@android:color/black"
+    		alphaSlider="false"	/> -->
+        
+        </PreferenceCategory>
+     
+     <PreferenceCategory
         android:title="@string/expense_views" >
         
         <CheckBoxPreference 
