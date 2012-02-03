@@ -137,6 +137,7 @@ public final class CashLensActivity extends Activity
 			initializeExpenses();
 			updateCurrentExpensesView();
 		} catch (Exception e) {
+			e.printStackTrace();
 			Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
 			finish();	// exit app
 			return;
@@ -145,7 +146,7 @@ public final class CashLensActivity extends Activity
 	
 	private void initializeExpenses() throws IOException, IllegalAccessException
 	{
-		AppSettings settings = AppSettings.instance(getApplicationContext());
+		AppSettings settings = AppSettings.instance(this);
 		
 		// First make sure old views are detached (remove dangling listeners)
 		detachAllExpensesViews();
@@ -243,6 +244,21 @@ public final class CashLensActivity extends Activity
 		return (ExpensesView)layout.getChildAt(0);
 	}
 	
+	private void setCurrentExpensesView(ExpenseFilterType filterType) throws IllegalAccessException
+	{
+		for (int i=0; i<mFlipExpenses.getChildCount(); ++i)
+		{
+			RelativeLayout layout = (RelativeLayout)mFlipExpenses.getChildAt(i);
+			ExpensesView expensesView = (ExpensesView)layout.getChildAt(0);
+			
+			if (expensesView.getFilterType() == filterType)
+			{
+				mFlipExpenses.setDisplayedChild(i);
+				updateCurrentExpensesView();
+			}
+		}
+	}
+	
 	private void updateCurrentExpensesView() throws IllegalAccessException
 	{
 		ExpensesView expenses = getCurrentExpensesView();
@@ -261,7 +277,7 @@ public final class CashLensActivity extends Activity
 		expenses.updateExpenses();
 		
 		// Save the current view filter
-		AppSettings settings = AppSettings.instance(getApplicationContext());
+		AppSettings settings = AppSettings.instance(this);
 		settings.setExpenseFilterType(expenses.getFilterType());
 
 		// Show "No expenses" if the list is empty
@@ -336,7 +352,7 @@ public final class CashLensActivity extends Activity
 	
 	private void updateTitle()
 	{
-		AppSettings settings = AppSettings.instance(getApplicationContext());
+		AppSettings settings = AppSettings.instance(this);
 		String filterType = "";
 		
 		switch (settings.getExpenseFilterType())
@@ -398,12 +414,22 @@ public final class CashLensActivity extends Activity
 				return;
 			}
 		}
-		else if (requestCode == RESULT_CODE_SETTINGS)
+		else if (requestCode == RESULT_CODE_SETTINGS || requestCode == RESULT_CODE_CUSTOM_FILTER)
 		{
 			// The user may have added/removed displayable expense views; reinitialize
 			try {
 				initializeExpenses();
-				updateCurrentExpensesView();
+				
+				// If the custom filter has been enabled, make it the current view
+				if (requestCode == RESULT_CODE_CUSTOM_FILTER)
+				{
+					AppSettings settings = AppSettings.instance(this);
+					
+					if (settings.getExpenseFilterViewEnabled(ExpenseFilterType.CUSTOM))
+						setCurrentExpensesView(ExpenseFilterType.CUSTOM);	// also updates view
+				}
+				else
+					updateCurrentExpensesView();
 			} catch (Exception e) {
 				Toast.makeText(this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
 				finish();	// exit app
