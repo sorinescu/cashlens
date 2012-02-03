@@ -32,7 +32,7 @@ public final class ExpensesView extends ListView
 	private ArrayListWithNotify<Expense> mExpenses;
 	private ArrayAdapterExpense mExpensesAdapter;
 	
-	private CashLensStorage mStorage = CashLensStorage.instance(getContext().getApplicationContext());
+	private CashLensStorage mStorage = CashLensStorage.instance(getContext());
 	
 	/**
 	 * @param context

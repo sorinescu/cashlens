@@ -85,7 +85,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		
 		try 
 		{
-			mStorage = CashLensStorage.instance(getApplicationContext());
+			mStorage = CashLensStorage.instance(this);
 		} catch (Exception e) 
 		{
 			e.printStackTrace();
@@ -479,7 +479,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	        parameters.setRotation(mPictureRotation);
 	        
 	        // Set JPEG quality and size from app settings
-			AppSettings settings = AppSettings.instance(getApplicationContext());
+			AppSettings settings = AppSettings.instance(this);
 	        AppSettings.PictureSize picSize = settings.getJpegPictureSize();
 
 	        parameters.setJpegQuality(settings.getJpegQuality());
@@ -547,7 +547,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 				// We can't use the parent's variables because the activity doesn't exist anymore
 				try
 				{
-					CashLensStorage storage = CashLensStorage.instance(getApplicationContext());
+					CashLensStorage storage = CashLensStorage.instance(AddExpenseActivity.this);
 
 					// Show success or error message and notify listeners that a new expense may be available
 					Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();

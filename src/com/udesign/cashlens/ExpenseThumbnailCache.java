@@ -37,7 +37,7 @@ public final class ExpenseThumbnailCache
 			
 			try
 			{
-				storage = CashLensStorage.instance(mContext.getApplicationContext());
+				storage = CashLensStorage.instance(mContext);
 			} catch (Exception e)
 			{
 				e.printStackTrace();
@@ -79,7 +79,7 @@ public final class ExpenseThumbnailCache
 	public static ExpenseThumbnailCache instance(Context context)
 	{
 		if (mCache == null)
-			mCache = new ExpenseThumbnailCache(context);
+			mCache = new ExpenseThumbnailCache(context.getApplicationContext());
 
 		return mCache;
 	}

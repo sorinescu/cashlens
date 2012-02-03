@@ -1027,8 +1027,8 @@ public final class CashLensStorage
 			for (int i=0; i<filters.length; ++i)
 				Log.d("recomputeExpenseFilters", "filter " + Integer.toString(i) +
 						": account0=" + (filters[i].accountIds != null ? filters[i].accountIds[0] : 0) +
-						", startDate=" + filters[i].startDate.toLocaleString() +
-						", endDate=" + filters[i].endDate.toLocaleString());
+						", startDate=" + (filters[i].startDate != null ? filters[i].startDate.toLocaleString() : "<null>") +
+						", endDate=" + (filters[i].endDate != null ? filters[i].endDate.toLocaleString() : "<null>"));
 			
 			mExpenseFilters = filters;
 			

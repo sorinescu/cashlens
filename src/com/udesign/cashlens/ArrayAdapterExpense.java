@@ -55,7 +55,7 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 		mContext = context;
 		mInflater = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		
-		mThumbCache = ExpenseThumbnailCache.instance(context.getApplicationContext());
+		mThumbCache = ExpenseThumbnailCache.instance(context);
 		mThumbs = new ArrayList<ExpenseThumbnail>();
 		
 		mTotalPerCurrency = new HashMap<Integer,Integer>();

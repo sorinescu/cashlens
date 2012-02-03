@@ -75,8 +75,7 @@ final class AppSettings
 	private AppSettings(Context context)
 	{
 //		Log.d("AppSettings", "creating AppSettings");
-		mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(
-				context.getApplicationContext());
+		mSharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
 		mSharedPrefsEditor = mSharedPrefs.edit();
 	}
 	

@@ -60,7 +60,7 @@ public final class ViewExpenseActivity extends Activity
 		
 		try
 		{
-			mStorage = CashLensStorage.instance(getApplicationContext());
+			mStorage = CashLensStorage.instance(this);
 		} catch (Exception e)
 		{
 			e.printStackTrace();
