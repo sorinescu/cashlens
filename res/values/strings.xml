@@ -61,4 +61,7 @@
     <string name="select_end_date">Select end date&#8230;</string>
     <string name="accounts_included">\u0020account(s) are included</string>
     <string name="enable_custom_filter">Enable custom filter</string>
+    <string name="user_interface">User interface</string>
+    <string name="expense_text_color">Expense text color</string>
+    <string name="expense_outline_color">Expense outline color</string>
 </resources>
