@@ -33,7 +33,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
-import android.view.ViewGroup.OnHierarchyChangeListener;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.RelativeLayout;
@@ -168,19 +167,6 @@ public final class CashLensActivity extends Activity
 			}
 		};
 		
-		OnHierarchyChangeListener onHierarchyChangeListener = new OnHierarchyChangeListener()
-		{
-			public void onChildViewRemoved(View parent, View child)
-			{
-				updateViewIfNoExpenses();
-			}
-			
-			public void onChildViewAdded(View parent, View child)
-			{
-				updateViewIfNoExpenses();
-			}
-		};
-		
 		ExpenseFilterType currentFilter = settings.getExpenseFilterType();
 
 		mFlipExpenses.removeAllViews();
@@ -209,6 +195,8 @@ public final class CashLensActivity extends Activity
 			expenses.setOnTouchListener(mOnTouchListener);
 			noExpensesText.setOnTouchListener(mOnTouchListener);
 			
+			expenses.setEmptyView(noExpensesText);
+			
 			RelativeLayout.LayoutParams fillParent = new RelativeLayout.LayoutParams(
 					LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 			fillParent.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
@@ -220,7 +208,6 @@ public final class CashLensActivity extends Activity
 			layout.addView(noExpensesText, fillParent);
 			
 			expenses.setOnItemClickListener(onItemClickListener);
-			expenses.setOnHierarchyChangeListener(onHierarchyChangeListener);
 
 			// Initialize expense views in the order specified in settings
 			ExpenseFilter customFilter = null;
@@ -280,9 +267,6 @@ public final class CashLensActivity extends Activity
 		AppSettings settings = AppSettings.instance(this);
 		settings.setExpenseFilterType(expenses.getFilterType());
 
-		// Show "No expenses" if the list is empty
-		updateViewIfNoExpenses();
-
 		// Show filter type in activity title
 		updateTitle();
 	}
@@ -332,24 +316,6 @@ public final class CashLensActivity extends Activity
 	    }
 	}
 		
-	private void updateViewIfNoExpenses()
-	{
-		RelativeLayout layout = (RelativeLayout)mFlipExpenses.getCurrentView();
-		ExpensesView expenses = (ExpensesView)layout.getChildAt(0);
-		TextView noExpensesText = (TextView)layout.getChildAt(1);
-		
-		if (expenses.getChildCount() == 0)
-		{
-			expenses.setVisibility(View.INVISIBLE);
-			noExpensesText.setVisibility(View.VISIBLE);
-		}
-		else
-		{
-			noExpensesText.setVisibility(View.INVISIBLE);
-			expenses.setVisibility(View.VISIBLE);
-		}
-	}
-	
 	private void updateTitle()
 	{
 		AppSettings settings = AppSettings.instance(this);
