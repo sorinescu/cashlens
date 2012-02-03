@@ -18,6 +18,7 @@ package com.udesign.cashlens;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.hardware.Camera;
@@ -27,6 +28,7 @@ import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
+import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 
@@ -38,7 +40,7 @@ public final class SettingsActivity extends PreferenceActivity
 	private CheckBoxPreference mMonthViewEnabled;
 	private CheckBoxPreference mWeekViewEnabled;
 	private CheckBoxPreference mDayViewEnabled;
-	private CheckBoxPreference mCustomViewEnabled;
+	private Preference mConfigCustomView;
 	
 	/* (non-Javadoc)
 	 * @see android.preference.PreferenceActivity#onCreate(android.os.Bundle)
@@ -55,7 +57,7 @@ public final class SettingsActivity extends PreferenceActivity
 		mMonthViewEnabled = (CheckBoxPreference)findPreference("expenseFilterMonthEnabled");
 		mWeekViewEnabled = (CheckBoxPreference)findPreference("expenseFilterWeekEnabled");
 		mDayViewEnabled = (CheckBoxPreference)findPreference("expenseFilterDayEnabled");
-		mCustomViewEnabled = (CheckBoxPreference)findPreference("expenseFilterCustomEnabled");
+		mConfigCustomView = (Preference)findPreference("expenseFilterCustomEnabled");
 		
 		OnPreferenceChangeListener onPreferenceChangeListener = new OnPreferenceChangeListener()
 		{
@@ -63,34 +65,51 @@ public final class SettingsActivity extends PreferenceActivity
 			{
 				// At least one view must be enabled; prevent value change if no view is enabled
 				// after newValue is set
-				boolean oneEnabled = false;
-				
-				SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SettingsActivity.this);
-				
-				if (mMonthViewEnabled != preference)
-					oneEnabled |= prefs.getBoolean(mMonthViewEnabled.getKey(), true);
-				if (mWeekViewEnabled != preference)
-					oneEnabled |= prefs.getBoolean(mWeekViewEnabled.getKey(), true);
-				if (mDayViewEnabled != preference)
-					oneEnabled |= prefs.getBoolean(mDayViewEnabled.getKey(), true);
-				if (mCustomViewEnabled != preference)
-					oneEnabled |= prefs.getBoolean(mCustomViewEnabled.getKey(), true);
-				
-				return oneEnabled || (Boolean)newValue; 
+				return atLeastOneFilterEnabled(preference) || (Boolean)newValue; 
 			}
 		};
 		
 		mMonthViewEnabled.setOnPreferenceChangeListener(onPreferenceChangeListener);
 		mWeekViewEnabled.setOnPreferenceChangeListener(onPreferenceChangeListener);
 		mDayViewEnabled.setOnPreferenceChangeListener(onPreferenceChangeListener);
-		mCustomViewEnabled.setOnPreferenceChangeListener(onPreferenceChangeListener);
+		mConfigCustomView.setOnPreferenceChangeListener(onPreferenceChangeListener);
+		
+		mConfigCustomView.setOnPreferenceClickListener(new OnPreferenceClickListener()
+		{
+			public boolean onPreferenceClick(Preference preference)
+			{
+				Intent customFilter = new Intent(SettingsActivity.this,
+						CustomExpenseFilterActivity.class);
+				startActivityForResult(customFilter, 1);
+				
+				return false;
+			}
+		});
 		
 		populateJpegPictureSize();
 	}
 	
+	public boolean atLeastOneFilterEnabled(Preference excludedPref)
+	{
+		boolean oneEnabled = false;
+		
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(SettingsActivity.this);
+		
+		if (mMonthViewEnabled != excludedPref)
+			oneEnabled |= prefs.getBoolean(mMonthViewEnabled.getKey(), true);
+		if (mWeekViewEnabled != excludedPref)
+			oneEnabled |= prefs.getBoolean(mWeekViewEnabled.getKey(), true);
+		if (mDayViewEnabled != excludedPref)
+			oneEnabled |= prefs.getBoolean(mDayViewEnabled.getKey(), true);
+		if (mConfigCustomView != excludedPref)
+			oneEnabled |= prefs.getBoolean(mConfigCustomView.getKey(), true);
+		
+		return oneEnabled;
+	}
+	
 	private void updateSummaries()
 	{
-		AppSettings settings = AppSettings.instance(getApplicationContext());
+		AppSettings settings = AppSettings.instance(this);
 		
 		mJpegQuality.setSummary(Integer.toString(settings.getJpegQuality()));
 		mJpegPictureSize.setSummary(settings.getJpegPictureSize().toString());
@@ -123,7 +142,7 @@ public final class SettingsActivity extends PreferenceActivity
 		mJpegPictureSize.setEntryValues(entries);
 
 		// Set a default picture size if none is stored
-		AppSettings settings = AppSettings.instance(getApplicationContext());
+		AppSettings settings = AppSettings.instance(this);
 
 		if (settings.getJpegPictureSize().width() == 0)	// not set
 			mJpegPictureSize.setValueIndex(0);
@@ -172,5 +191,21 @@ public final class SettingsActivity extends PreferenceActivity
 			String key)
 	{
 		updateSummaries();
+	}
+
+	/* (non-Javadoc)
+	 * @see android.preference.PreferenceActivity#onActivityResult(int, int, android.content.Intent)
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
+		super.onActivityResult(requestCode, resultCode, data);
+		
+		// This is called after the Custom filter activity finishes
+		
+		// If no filter is enabled anymore because the user disabled the custom filter,
+		// enable the day view (at least one view must be enabled)
+		if (!atLeastOneFilterEnabled(null))
+			mDayViewEnabled.setChecked(true);
 	}
 }

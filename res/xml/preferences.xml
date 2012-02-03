@@ -37,16 +37,10 @@
             android:title="@string/day_view" 
             android:defaultValue="true" />
         
-        <CheckBoxPreference 
-            android:key="expenseFilterCustomEnabled"
-            android:title="@string/custom_period_view" 
-            android:defaultValue="false" />
-        
         <Preference 
-            android:key="expenseFilterCustom"
-            android:persistent="false"
-            android:title="@string/custom_filter"
-            android:dependency="expenseFilterCustomEnabled" />
+            android:key="expenseFilterCustomEnabled"
+            android:title="@string/configure_custom_filter" 
+            android:persistent="false" />
         
      </PreferenceCategory>
 

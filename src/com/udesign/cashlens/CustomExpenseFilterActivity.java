@@ -96,7 +96,7 @@ public final class CustomExpenseFilterActivity extends PreferenceActivity
 			mAccounts.setSummary(Integer.toString(customFilter.accountIds.length) + 
 					getResources().getString(R.string.accounts_included));
 		else
-			mAccounts.setSummary(getResources().getString(R.string.no_accounts_included));
+			mAccounts.setSummary(getResources().getString(R.string.all_accounts_included));
 		
 		if (customFilter.startDate != null)
 			mStartDate.setSummary(mStartDate.summaryFormatter().format(customFilter.startDate));
