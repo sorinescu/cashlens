@@ -52,12 +52,13 @@
     <string name="month_view">Month view</string>
     <string name="week_view">Week view</string>
     <string name="day_view">Day view</string>
-    <string name="custom_period_view">Custom period view</string>
+    <string name="configure_custom_filter">Configure custom filter</string>
     <string name="include_accounts">Include accounts</string>
-    <string name="no_accounts_included">No account is included</string>
+    <string name="all_accounts_included">All accounts are included</string>
     <string name="start_date">Start date</string>
     <string name="end_date">End date</string>
     <string name="select_start_date">Select start date&#8230;</string>
     <string name="select_end_date">Select end date&#8230;</string>
     <string name="accounts_included">\u0020account(s) are included</string>
+    <string name="enable_custom_filter">Enable custom filter</string>
 </resources>
