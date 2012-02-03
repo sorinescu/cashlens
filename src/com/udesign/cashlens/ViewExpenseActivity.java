@@ -31,7 +31,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.widget.TextView;
 import android.widget.Toast;
 
 public final class ViewExpenseActivity extends Activity
@@ -39,7 +38,7 @@ public final class ViewExpenseActivity extends Activity
 	protected CashLensStorage mStorage = null;
 	protected Expense mExpense = null;
 	protected ZoomableImageView mImageView;
-	protected TextView mText;
+	protected OutlineTextView mText;
 	protected Bitmap mImage = null;
 	
 	/* (non-Javadoc)
@@ -73,7 +72,11 @@ public final class ViewExpenseActivity extends Activity
 		Log.d("ViewExpense.onCreate", "viewing expense with id " + Integer.toString(expenseId) + ", resolved to " + mExpense.toString());
 		
 		mImageView = (ZoomableImageView)findViewById(android.R.id.background);
-		mText = (TextView)findViewById(android.R.id.text1);
+		mText = (OutlineTextView)findViewById(android.R.id.text1);
+		
+		AppSettings settings = AppSettings.instance(this);
+		mText.setTextColor(settings.getExpenseTextColor());
+		mText.setOutlineColor(settings.getExpenseOutlineColor());
 		
 		if (mExpense.imagePath != null)
 		{

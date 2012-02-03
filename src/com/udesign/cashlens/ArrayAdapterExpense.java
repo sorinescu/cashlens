@@ -32,7 +32,6 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 
 public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail.OnExpenseThumbnailLoadedListener,
 	ArrayListWithNotify.OnDataChangedListener
@@ -106,8 +105,15 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 		
 		Expense expense = mItems.get(position);
 		
-		TextView expenseText = (TextView)rowLayout.findViewById(android.R.id.text1);
-		TextView totalText = (TextView)rowLayout.findViewById(android.R.id.text2);
+		OutlineTextView expenseText = (OutlineTextView)rowLayout.findViewById(android.R.id.text1);
+		OutlineTextView totalText = (OutlineTextView)rowLayout.findViewById(android.R.id.text2);
+		
+		AppSettings settings = AppSettings.instance(mContext);
+		
+		expenseText.setTextColor(settings.getExpenseTextColor());
+		expenseText.setOutlineColor(settings.getExpenseOutlineColor());
+		totalText.setTextColor(settings.getExpenseTextColor());
+		totalText.setOutlineColor(settings.getExpenseOutlineColor());
 		
 		DateFormat df = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
 		
