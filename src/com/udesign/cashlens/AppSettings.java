@@ -25,6 +25,7 @@ import com.udesign.cashlens.CashLensStorage.ExpenseFilterType;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.preference.PreferenceManager;
 
 final class AppSettings
@@ -298,6 +299,40 @@ final class AppSettings
 			return;
 		}
 		
+		mSharedPrefsEditor.commit();
+	}
+	
+	/**
+	 * @return the expenseTextColor
+	 */
+	public int getExpenseTextColor()
+	{
+		return mSharedPrefs.getInt("expenseTextColor", Color.WHITE);
+	}
+
+	/**
+	 * @param expenseTextColor the expenseTextColor to set
+	 */
+	public void setExpenseTextColor(int expenseTextColor)
+	{
+		mSharedPrefsEditor.putInt("expenseTextColor", expenseTextColor);
+		mSharedPrefsEditor.commit();
+	}
+	
+	/**
+	 * @return the expenseOutlineColor
+	 */
+	public int getExpenseOutlineColor()
+	{
+		return mSharedPrefs.getInt("expenseOutlineColor", Color.BLACK);
+	}
+
+	/**
+	 * @param expenseOutlineColor the expenseOutlineColor to set
+	 */
+	public void setExpenseOutlineColor(int expenseOutlineColor)
+	{
+		mSharedPrefsEditor.putInt("expenseOutlineColor", expenseOutlineColor);
 		mSharedPrefsEditor.commit();
 	}
 }
