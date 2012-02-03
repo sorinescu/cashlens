@@ -393,6 +393,8 @@ public final class CashLensActivity extends Activity
 					
 					if (settings.getExpenseFilterViewEnabled(ExpenseFilterType.CUSTOM))
 						setCurrentExpensesView(ExpenseFilterType.CUSTOM);	// also updates view
+					else
+						updateCurrentExpensesView();	// keep current view
 				}
 				else
 					updateCurrentExpensesView();
