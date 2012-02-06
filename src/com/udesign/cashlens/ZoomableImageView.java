@@ -24,8 +24,10 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.PointF;
+import android.graphics.RectF;
 import android.os.Handler;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -43,8 +45,8 @@ public class ZoomableImageView extends ImageView {
 	Matrix matrix = new Matrix();
 
     // Remember some things for zooming
-    PointF last = new PointF();
     PointF scaleCenter = new PointF();
+    RectF scaleRect = new RectF();	// cached rectangle object
     float minScale = 1f;
     float maxScale = 3f;
     float[] m;
@@ -52,8 +54,8 @@ public class ZoomableImageView extends ImageView {
     float redundantXSpace, redundantYSpace;
     
     float viewWidth, viewHeight;
-    float saveScale = 1f;
-    float right, bottom, origWidth, origHeight, bmWidth, bmHeight;
+    float currScale = 1f;
+    float usableViewWidth, usableViewHeight, bmWidth, bmHeight;
     
     VersionedGestureDetector mScaleDetector;
     Context mContext;
@@ -198,9 +200,9 @@ public class ZoomableImageView extends ImageView {
     {
     	initializeZoomButtonsIfNecessary();
     	
-        if (saveScale >= maxScale)
+        if (currScale >= maxScale)
         	mZoomButtons.setZoomInEnabled(false);
-        else if (saveScale <= minScale)
+        else if (currScale <= minScale)
         	mZoomButtons.setZoomOutEnabled(false);
         else
         {
@@ -209,48 +211,45 @@ public class ZoomableImageView extends ImageView {
         }
     }
     
+    protected void doTranslation(float deltaX, float deltaY)
+    {
+    	scaleRect.set(0, 0, bmWidth, bmHeight);
+    	matrix.mapRect(scaleRect);
+
+    	if (scaleRect.left + deltaX > redundantXSpace)
+			deltaX = redundantXSpace - scaleRect.left;
+		if (scaleRect.top + deltaY > redundantYSpace)
+			deltaY = redundantYSpace - scaleRect.top;
+		if (scaleRect.right + deltaX < viewWidth - redundantXSpace)
+			deltaX = viewWidth - redundantXSpace - scaleRect.right;
+		if (scaleRect.bottom + deltaY < viewHeight - redundantYSpace)
+			deltaY = viewHeight - redundantYSpace - scaleRect.bottom;
+
+		matrix.postTranslate(deltaX, deltaY);
+    }
+    
     protected void zoom(float scaleFactor)
     {
-//		Log.d("ZoomableImageView", "zoom(" + Float.toString(scaleFactor) + "); center=" + 
-//				Float.toString(scaleCenter.x) + "," + Float.toString(scaleCenter.y));
+		Log.d("ZoomableImageView", "zoom(" + Float.toString(scaleFactor) + "); center=" + 
+				Float.toString(scaleCenter.x) + "," + Float.toString(scaleCenter.y));
 		
-	 	float origScale = saveScale;
-        saveScale *= scaleFactor;
-        if (saveScale > maxScale) {
-        	saveScale = maxScale;
+	 	float origScale = currScale;
+        currScale *= scaleFactor;
+        if (currScale > maxScale) {
+        	currScale = maxScale;
         	scaleFactor = maxScale / origScale;
-        } else if (saveScale < minScale) {
-        	saveScale = minScale;
+        } else if (currScale < minScale) {
+        	currScale = minScale;
         	scaleFactor = minScale / origScale;
         }
         
         updateZoomButtonsEnabled();
         
-    	right = viewWidth * saveScale - viewWidth - (2 * redundantXSpace * saveScale);
-        bottom = viewHeight * saveScale - viewHeight - (2 * redundantYSpace * saveScale);
-
         matrix.postScale(scaleFactor, scaleFactor, scaleCenter.x, scaleCenter.y);
-
-    	if (origWidth * saveScale <= viewWidth || origHeight * saveScale <= viewHeight) {
-        	if (scaleFactor < 1) {
-        		matrix.getValues(m);
-        		float x = m[Matrix.MTRANS_X];
-            	float y = m[Matrix.MTRANS_Y];
-
-            	if (Math.round(origWidth * saveScale) < viewWidth) {
-	        		if (y < -bottom)
-    	        		matrix.postTranslate(0, -(y + bottom));
-	        		else if (y > 0)
-    	        		matrix.postTranslate(0, -y);
-	        	} else {
-            		if (x < -right) 
-    	        		matrix.postTranslate(-(x + right), 0);
-            		else if (x > 0) 
-    	        		matrix.postTranslate(-x, 0);
-	        	}
-        	}
-    	}
-    	
+        
+        // Make sure the matrix respects the view bounds
+        doTranslation(0, 0);
+        
         setImageMatrix(matrix);
         invalidate();
     }
@@ -264,40 +263,9 @@ public class ZoomableImageView extends ImageView {
 
 		public void onDrag(float deltaX, float deltaY)
 		{
-			//Log.d("ScaleListener", "onDrag(" + Float.toString(deltaX) + "," + Float.toString(deltaY) + ")");
+			Log.d("ScaleListener", "onDrag(" + Float.toString(deltaX) + "," + Float.toString(deltaY) + ")");
 
-			matrix.getValues(m);
-        	float x = m[Matrix.MTRANS_X];
-        	float y = m[Matrix.MTRANS_Y];
-			PointF curr = new PointF(last.x + deltaX, last.y + deltaY);
-			
-			float scaleWidth = Math.round(origWidth * saveScale);
-			float scaleHeight = Math.round(origHeight * saveScale);
-			if (scaleWidth < viewWidth) {
-				deltaX = 0;
-				if (y + deltaY > 0)
-    				deltaY = -y;
-				else if (y + deltaY < -bottom)
-    				deltaY = -(y + bottom); 
-			} else if (scaleHeight < viewHeight) {
-				deltaY = 0;
-				if (x + deltaX > 0)
-    				deltaX = -x;
-    			else if (x + deltaX < -right)
-    				deltaX = -(x + right);
-			} else {
-				if (x + deltaX > 0)
-    				deltaX = -x;
-    			else if (x + deltaX < -right)
-    				deltaX = -(x + right);
-    			
-				if (y + deltaY > 0)
-    				deltaY = -y;
-    			else if (y + deltaY < -bottom)
-    				deltaY = -(y + bottom);
-			}
-        	matrix.postTranslate(deltaX, deltaY);
-        	last.set(curr.x, curr.y);
+			doTranslation(deltaX, deltaY);
 
             setImageMatrix(matrix);
             invalidate();
@@ -353,7 +321,7 @@ public class ZoomableImageView extends ImageView {
         float scaleY = (float)viewHeight / (float)bmHeight;
         scale = Math.min(scaleX, scaleY);
         matrix.setScale(scale, scale);
-        saveScale = 1f;
+        currScale = 1f;
 
         // Center the image
         redundantYSpace = (float)viewHeight - (scale * (float)bmHeight) ;
@@ -364,10 +332,7 @@ public class ZoomableImageView extends ImageView {
         matrix.postTranslate(redundantXSpace, redundantYSpace);
         setImageMatrix(matrix);
         
-        origWidth = viewWidth - 2 * redundantXSpace;
-        origHeight = viewHeight - 2 * redundantYSpace;
-        
-        right = viewWidth * saveScale - viewWidth - (2 * redundantXSpace * saveScale);
-        bottom = viewHeight * saveScale - viewHeight - (2 * redundantYSpace * saveScale);
+        usableViewWidth = viewWidth - 2 * redundantXSpace;
+        usableViewHeight = viewHeight - 2 * redundantYSpace;
     }
 }
