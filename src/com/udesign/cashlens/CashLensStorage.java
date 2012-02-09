@@ -124,7 +124,7 @@ public final class CashLensStorage
 		public static void onCreate(SQLiteDatabase db)
 		{
 			db.execSQL("CREATE TABLE " + TABLE_NAME + " (" 
-					+ AccountsTable._ID	+ " INTEGER PRIMARY KEY," 
+					+ AccountsTable._ID	+ " INTEGER PRIMARY KEY AUTOINCREMENT," 
 					+ AccountsTable.NAME + " TEXT,"
 					+ AccountsTable.CURRENCY + " INTEGER,"
 					+ AccountsTable.MONTH_START + " INTEGER"
@@ -353,7 +353,7 @@ public final class CashLensStorage
 		public static void onCreate(SQLiteDatabase db)
 		{
 			db.execSQL("CREATE TABLE " + ExpensesTable.TABLE_NAME + " ("
-					+ ExpensesTable._ID + " INTEGER PRIMARY KEY,"
+					+ ExpensesTable._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
 					+ ExpensesTable.ACCOUNT + " INTEGER,"
 					+ ExpensesTable.AMOUNT + " INTEGER," 
 					+ ExpensesTable.DATE + " INTEGER NOT NULL," 
@@ -414,7 +414,7 @@ public final class CashLensStorage
 		public static void onCreate(SQLiteDatabase db)
 		{
 			db.execSQL("CREATE TABLE " + TABLE_NAME + " (" 
-					+ ExpenseThumbnailsTable._ID + " INTEGER PRIMARY KEY," 
+					+ ExpenseThumbnailsTable._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," 
 					+ ExpenseThumbnailsTable.DATA_PORTRAIT + " BLOB,"
 					+ ExpenseThumbnailsTable.DATA_LANDSCAPE + " BLOB"
 					+ ");");
