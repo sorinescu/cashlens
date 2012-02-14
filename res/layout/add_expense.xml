@@ -13,12 +13,33 @@
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true" />
 
+    <!-- This needs to be here, because we want it to be just above cameraPreview
+         in the Z order -->
+    <ImageView
+        android:id="@+id/photoView"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_toRightOf="@+id/btnShoot"
+        android:layout_alignParentBottom="true"
+        android:src="@drawable/expander_ic_maximized" />
+    
+    <EditText
+        android:id="@+id/txtDesc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/rounded_translucent_textview"
+        style="@style/large_button_text"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true" />
+
     <LinearLayout
         android:id="@+id/linearLayout1"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true" >
+        android:layout_below="@+id/txtDesc" >
 
         <EditText
             android:id="@+id/txtSum"
@@ -28,11 +49,8 @@
             android:background="@drawable/rounded_translucent_textview"
             android:editable="false"
             android:enabled="false"
-            android:inputType="none|numberDecimal"
             style="@style/large_button_text"
-            android:textColor="#FF00FF00" >
-
-        </EditText>
+            android:textColor="#FF00FF00" />
 
         <Button
             android:id="@+id/btnDel"
@@ -210,7 +228,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_toLeftOf="@+id/btnShoot"
+        android:layout_toRightOf="@+id/btnShoot"
         android:background="@drawable/rounded_translucent_button"
         android:visibility="invisible" />
     
@@ -221,7 +239,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
+        android:layout_alignParentLeft="true"
         android:background="@drawable/rounded_translucent_button" />
     
+    <ImageButton 
+        android:id="@+id/btnSave"
+        style="@style/large_button_text"
+        android:src="@drawable/save_disabled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:background="@drawable/rounded_translucent_button" />
+
 </RelativeLayout>
