@@ -18,38 +18,49 @@ package com.udesign.cashlens;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.util.Date;
 
 import com.udesign.cashlens.CashLensStorage.Account;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.hardware.Camera;
+import android.hardware.Camera.Size;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Parameters;
-import android.hardware.Camera.PictureCallback;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.ScaleAnimation;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class AddExpenseActivity extends Activity implements SurfaceHolder.Callback, AutoFocusCallback, PictureCallback
+public class AddExpenseActivity extends Activity 
+	implements SurfaceHolder.Callback, Camera.AutoFocusCallback, Camera.PictureCallback, Camera.PreviewCallback
 {
 	private RelativeLayout mLayout;
 	private SurfaceView mCameraPreview;
@@ -59,14 +70,18 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	private Button mDelButton;
 	private Button mDotButton;
 	private TextView mExpenseText;
+	private EditText mDescriptionText;
 	private Spinner mAccountSpinner;
 	private ArrayAdapterIDAndName<Account> mAccountsAdapter;
+	private ImageView mPhotoThumbnail;
 	private ImageButton mSnapshotButton;
+	private ImageButton mSaveButton;
 	private boolean mShouldTakePicture = false;
 	private boolean mInFocus = false;
 	private Handler mAutoFocusStarter;
 	private Runnable mAutoFocusTask;
-	//private ImageButton mRecordButton;
+	private byte[] mJPEGData;
+	private byte[] mPreviewData;
 	private CashLensStorage mStorage;
 	private SensorEventListener mOrientationListener;
 	private int mPictureRotation = 0;
@@ -74,6 +89,31 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	public String mExpenseFrac;
 	public boolean mExpenseDot = false;
 	
+	class NumericButtonClickListener implements OnClickListener
+	{
+		private int mFigure;
+		
+		NumericButtonClickListener(int figure)
+		{
+			mFigure = figure;
+		}
+		
+		public void onClick(View v) 
+		{
+			AddExpenseActivity parent = AddExpenseActivity.this;
+			
+			if (parent.mExpenseDot)
+			{
+				if (parent.mExpenseFrac.length() < 2)
+					parent.mExpenseFrac += Integer.toString(mFigure);
+			}
+			else
+				parent.mExpenseInt +=  Integer.toString(mFigure);
+
+			parent.updateExpenseText();
+		}
+	}
+
 	/* (non-Javadoc)
 	 * @see android.app.Activity#onCreate(android.os.Bundle)
 	 */
@@ -99,6 +139,10 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 
 		mCameraPreview = (SurfaceView)findViewById(R.id.cameraPreview);
 
+		mSaveButton = (ImageButton)findViewById(R.id.btnSave);
+
+		mDescriptionText = (EditText)findViewById(R.id.txtDesc);
+		
 		mExpenseText = (TextView)findViewById(R.id.txtSum);
 		updateExpenseText();
 		
@@ -117,9 +161,8 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		mDelButton = (Button)findViewById(R.id.btnDel);
 		mDotButton = (Button)findViewById(R.id.btnDot);
 		
+		mPhotoThumbnail = (ImageView)findViewById(R.id.photoView);
 		mSnapshotButton = (ImageButton)findViewById(R.id.btnShoot);
-		//mRecordButton = (ImageButton)findViewById(R.id.btnRec);
-
 		mAccountSpinner = (Spinner)findViewById(R.id.spinAccount);
 		
 		AppSettings settings = AppSettings.instance(this);
@@ -146,7 +189,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		// Click listeners
 
 		for (int i=0; i<10; ++i)
-			mNumButtons[i].setOnClickListener(new NumericButtonClickListener(this, i));
+			mNumButtons[i].setOnClickListener(new NumericButtonClickListener(i));
 		
 		mDelButton.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) 
@@ -178,25 +221,43 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		});
 		
 		mSnapshotButton.setOnClickListener(new OnClickListener() {
-			private boolean mToastShown;
-			
 			public void onClick(View v) 
 			{
 				// picture is taken when autofocus is complete
 				AddExpenseActivity parent = AddExpenseActivity.this;
 				
-				if (parent.dataValid())
-				{
-					parent.mShouldTakePicture = true;
-					
-					// will also take the picture once in focus
-					parent.startAutoFocusIfPossible();
-				}
-				else if (!mToastShown)
-				{
-					Toast.makeText(parent, R.string.fill_amount_before_snapshot, Toast.LENGTH_LONG).show();
-					mToastShown = true;
-				}
+				parent.mShouldTakePicture = true;
+				
+				// will also take the picture once in focus
+				parent.startAutoFocusIfPossible();
+			}
+		});
+		
+		mSaveButton.setOnClickListener(new OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				saveExpense();
+				
+				// make sure we can't press Save again
+				mSaveButton.setEnabled(false);
+			}
+		});
+		
+		mDescriptionText.addTextChangedListener(new TextWatcher()
+		{
+			public void onTextChanged(CharSequence s, int start, int before, int count)
+			{
+			}
+			
+			public void beforeTextChanged(CharSequence s, int start, int count,
+					int after)
+			{
+			}
+			
+			public void afterTextChanged(Editable s)
+			{
+				updateSaveButtonState();
 			}
 		});
 		
@@ -236,19 +297,10 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		
 		sensors.registerListener(mOrientationListener, sensors.getDefaultSensor(Sensor.TYPE_ORIENTATION),
 				SensorManager.SENSOR_DELAY_NORMAL);
+		
+		updateSaveButtonState();
 	}
 
-	public boolean dataValid()
-	{
-		if (getExpenseFixedPoint() == 0)
-			return false;
-		
-		if (mAccountSpinner.getSelectedItemId() == AdapterView.INVALID_ROW_ID)
-			return false;
-		
-		return true;
-	}
-	
 	protected String getExpenseText()
 	{
 		String txt;
@@ -280,6 +332,8 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	public void updateExpenseText()
 	{
 		mExpenseText.setText(getExpenseText());
+		
+		updateSaveButtonState();
 	}
 	
 	/* (non-Javadoc)
@@ -364,6 +418,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
         try 
         {
            mCamera.setPreviewDisplay(holder);
+           mCamera.setPreviewCallback(this);
         } 
         catch (IOException exception) 
         {
@@ -385,7 +440,7 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 	        mCamera = null;
         }
         
-        // save last used currency and account
+        // save last used account
         AppSettings settings = AppSettings.instance(this);
         long id;
         
@@ -506,8 +561,11 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 		return false;	// didn't need to take picture
 	}
 
-	public void onPictureTaken(byte[] data, Camera camera) 
+	private void saveExpense()
 	{
+		if (mJPEGData == null && mDescriptionText.getText().length() == 0)
+			return;
+		
 		new AsyncTask<byte[], Void, String>() 
 		{
 			@Override
@@ -522,7 +580,11 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 						return null;
 					Log.w("onPictureTaken", "Selected account is " + account.name + ", id " + Integer.toString(account.id));
 					
-					mStorage.saveExpense(account, getExpenseFixedPoint(), new Date(), data);
+					String description = mDescriptionText.getText().toString();
+					if (description.length() == 0)
+						description = null;
+					
+					mStorage.saveExpense(account, getExpenseFixedPoint(), new Date(), data, description);
 				} 
 				catch (Exception e) 
 				{
@@ -558,34 +620,83 @@ public class AddExpenseActivity extends Activity implements SurfaceHolder.Callba
 					Toast.makeText(getApplicationContext(), e.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
 				}
 			}
-		}.execute(data);
+		}.execute(mJPEGData);
 		
 		// End activity; expense will be saved asynchronously
 		finish();
 	}
-}
-
-class NumericButtonClickListener implements OnClickListener
-{
-	private int mFigure;
-	private AddExpenseActivity mParent;
 	
-	NumericButtonClickListener(AddExpenseActivity parent, int figure)
+	public void onPictureTaken(byte[] data, Camera camera) 
 	{
-		mParent = parent;
-		mFigure = figure;
+		mJPEGData = data;
+		
+		updateSaveButtonState();
+		animatePictureThumbnail();
+		
+        mCamera.startPreview();
 	}
 	
-	public void onClick(View v) 
+	private void animatePictureThumbnail()
 	{
-		if (mParent.mExpenseDot)
-		{
-			if (mParent.mExpenseFrac.length() < 2)
-				mParent.mExpenseFrac += Integer.toString(mFigure);
-		}
-		else
-			mParent.mExpenseInt +=  Integer.toString(mFigure);
+		if (mPreviewData == null)
+			return;
 
-		mParent.updateExpenseText();
+		Camera.Parameters params = mCamera.getParameters();
+		Size sz = params.getPreviewSize();
+		
+		// Preview data is in NV21 format (YUV 420); convert to RGB565
+		byte[] rgbData = new byte[2 * sz.width * sz.height];
+		CashLensUtils.nv21ToRGB565(mPreviewData, rgbData, sz.width, sz.height);
+		
+		mPreviewData = null;	// free the preview data, if necessary
+
+		// Copy RGB565 preview data into bitmap
+		Bitmap snapshot = Bitmap.createBitmap(sz.width, sz.height, Config.RGB_565);
+		snapshot.copyPixelsFromBuffer(ByteBuffer.wrap(rgbData));
+		
+		// Rotate bitmap
+		Matrix m = new Matrix();
+		m.postRotate(90);
+		Bitmap thumb = Bitmap.createBitmap(snapshot, 0, 0, sz.width, sz.height, m, false);
+		
+		rgbData = null;		// free the memory, if necessary
+		
+		mPhotoThumbnail.setImageBitmap(thumb);
+		mPhotoThumbnail.setVisibility(View.VISIBLE);
+
+		// The thumbnail will be scaled from full screen to the size of the
+		// snapshot button
+		float snapWidth = mSnapshotButton.getWidth();
+		float snapHeight = mSnapshotButton.getHeight();
+		
+		// Can't use mPhotoThumbnail because it hasn't been laid out yet (width=height=0)
+		float scaleX = snapWidth / mLayout.getWidth();
+		float scaleY = snapHeight / mLayout.getHeight();
+		
+		ScaleAnimation scaleAnim = new ScaleAnimation(1.0f, scaleX, 1.0f, scaleY, 
+				Animation.RELATIVE_TO_SELF, 0f, Animation.RELATIVE_TO_SELF, 1.0f);
+
+		scaleAnim.setInterpolator(new LinearInterpolator());
+		scaleAnim.setDuration(100);
+		scaleAnim.setFillAfter(true);
+		
+		mPhotoThumbnail.startAnimation(scaleAnim);
+	}
+	
+	private void updateSaveButtonState()
+	{
+		boolean enabled = 
+				(mJPEGData != null || mDescriptionText.getText().length() != 0) 
+				&& getExpenseFixedPoint() != 0 
+				&& mAccountSpinner.getSelectedItemId() != AdapterView.INVALID_ROW_ID;
+
+		mSaveButton.setEnabled(enabled);
+		mSaveButton.setImageResource(enabled ? R.drawable.save : R.drawable.save_disabled);
+	}
+
+	public void onPreviewFrame(byte[] data, Camera camera)
+	{
+		// Save frame so we can copy it into a thumbnail when a picture is taken
+		mPreviewData = data;
 	}
 }
