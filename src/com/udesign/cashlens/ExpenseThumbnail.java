@@ -232,7 +232,7 @@ public class ExpenseThumbnail
 		if (mBitmapPortrait != null)
 			return;
 		
-		mBitmapPortrait = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.camera);
+		mBitmapPortrait = BitmapFactory.decodeResource(mContext.getResources(), android.R.drawable.ic_menu_camera);
 		if (mBitmapPortrait == null)
 			throw new IOException("Couldn't load default thumbnail");
 	}
