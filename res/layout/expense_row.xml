@@ -10,7 +10,8 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
         android:padding="0dp"
-        android:src="@drawable/camera" />
+        android:scaleType="center"
+        android:src="@android:drawable/ic_menu_camera" />
 
     <com.udesign.cashlens.OutlineTextView
         android:id="@android:id/text1"
