@@ -2,3 +2,6 @@
 /bin
 /assets
 /.extra
+/obj
+/libs
+/gen
