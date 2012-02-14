@@ -74,6 +74,11 @@ public final class ExpenseThumbnailCache
 	protected ExpenseThumbnailCache(Context context)
 	{
 		mContext = context;
+		
+		// insert a dummy thumbnail, to be used when an expense has no image
+		ExpenseThumbnail thumb = new ExpenseThumbnail(mContext, 0);
+		mThumbs.put(new Integer(0), thumb);
+		Log.d("ThumbCache", "cached dummy thumbnail for id 0");
 	}
 	
 	public static ExpenseThumbnailCache instance(Context context)
