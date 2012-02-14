@@ -137,20 +137,17 @@ public class ArrayAdapterExpense extends BaseAdapter implements ExpenseThumbnail
 		totalText.setText(Html.fromHtml(html));
 		
 		// if there's a thumbnail, override default image once thumbnail is loaded
-		if (expense.thumbnailId != 0)
+		ImageView image = (ImageView)rowLayout.findViewById(android.R.id.icon1);
+		
+		ExpenseThumbnail thumb = mThumbCache.getThumbnail(expense.thumbnailId, this, image);
+		mThumbs.add(thumb);
+		
+		try
 		{
-			ImageView image = (ImageView)rowLayout.findViewById(android.R.id.icon1);
-			
-			ExpenseThumbnail thumb = mThumbCache.getThumbnail(expense.thumbnailId, this, image);
-			mThumbs.add(thumb);
-			
-			try
-			{
-				image.setImageBitmap(thumb.asBitmap(mOrientation != Configuration.ORIENTATION_LANDSCAPE));
-			} catch (IOException e)
-			{
-				e.printStackTrace();
-			}
+			image.setImageBitmap(thumb.asBitmap(mOrientation != Configuration.ORIENTATION_LANDSCAPE));
+		} catch (IOException e)
+		{
+			e.printStackTrace();
 		}
 		
 		return rowLayout;
