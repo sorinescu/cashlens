@@ -832,20 +832,27 @@ public final class CashLensStorage
 	}
 
 	public synchronized void saveExpense(Account account, int amount,
-			Date date, byte[] jpegData) throws IOException, IllegalAccessException
+			Date date, byte[] jpegData, String description) throws IOException, IllegalAccessException
 	{
-		File imageFile = randomFile(storageDirectory(DataType.IMAGE), ".jpeg");
-		FileOutputStream image = new FileOutputStream(imageFile);
-
-		// Write image data
-		image.write(jpegData);
-		image.flush();
-		image.close();
+		String imagePath = null;
+		int thumbId = 0;
 		
-		// Generate and save thumbnail
-		ExpenseThumbnail.Data thumbData = ExpenseThumbnail.createFromJPEG(mContext, jpegData, imageFile.getAbsolutePath());
-		
-		int thumbId = saveExpenseThumbnail(thumbData);
+		if (jpegData != null)
+		{
+			File imageFile = randomFile(storageDirectory(DataType.IMAGE), ".jpeg");
+			FileOutputStream image = new FileOutputStream(imageFile);
+	
+			// Write image data
+			image.write(jpegData);
+			image.flush();
+			image.close();
+			
+			// Generate and save thumbnail
+			ExpenseThumbnail.Data thumbData = ExpenseThumbnail.createFromJPEG(mContext, jpegData, imageFile.getAbsolutePath());
+			
+			thumbId = saveExpenseThumbnail(thumbData);
+			imagePath = imageFile.getAbsolutePath();
+		}
 		
 		// Save expense to database
 		Expense expense = new Expense(this);
@@ -853,8 +860,8 @@ public final class CashLensStorage
 		expense.amount = amount;
 		expense.date = date;
 		expense.audioPath = null;
-		expense.description = null;
-		expense.imagePath = imageFile.getAbsolutePath();
+		expense.description = description;
+		expense.imagePath = imagePath;
 		expense.thumbnailId = thumbId;
 		
 		saveExpenseToDB(expense);
