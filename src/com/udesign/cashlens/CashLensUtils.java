@@ -24,6 +24,8 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
+import android.os.Build;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
@@ -185,4 +187,30 @@ public final class CashLensUtils
 
 		return startOfDay(cal.getTime());
 	}
+	
+	// Based on code from http://www.pocketmagic.net/?p=1662
+	public static String getDeviceId(Context context)
+	{
+		// IMEI, if present
+		TelephonyManager telephonyMgr = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE);
+		String imei = telephonyMgr.getDeviceId(); // Requires READ_PHONE_STATE
+		if (imei != null)
+			return imei;
+		
+		String devId = "35" + //we make this look like a valid IMEI
+	        	Build.BOARD.length()%10+ Build.BRAND.length()%10 +
+	        	Build.CPU_ABI.length()%10 + Build.DEVICE.length()%10 +
+	        	Build.DISPLAY.length()%10 + Build.HOST.length()%10 +
+	        	Build.ID.length()%10 + Build.MANUFACTURER.length()%10 +
+	        	Build.MODEL.length()%10 + Build.PRODUCT.length()%10 +
+	        	Build.TAGS.length()%10 + Build.TYPE.length()%10 +
+	        	Build.USER.length()%10 ; //13 digits
+		
+		return devId;
+	}
+	
+	static {
+		System.loadLibrary("CashLens");
+	}
+	static public native void nv21ToRGB565(byte[] yuvs, byte[] rgbs, int width, int height);
 }
