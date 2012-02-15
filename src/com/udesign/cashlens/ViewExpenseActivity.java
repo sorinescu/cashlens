@@ -31,6 +31,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public final class ViewExpenseActivity extends Activity
@@ -95,6 +97,14 @@ public final class ViewExpenseActivity extends Activity
 			
 			mImageView.setImageBitmap(mImage);
 		}
+		else
+		{
+			mImageView.setVisibility(View.GONE);
+			
+			// Show "No image" instead of mImageView
+			TextView noImageText = (TextView)findViewById(android.R.id.text2);
+			noImageText.setVisibility(View.VISIBLE);
+		}
 
 		setExpenseText();
 	}
@@ -106,8 +116,11 @@ public final class ViewExpenseActivity extends Activity
 	protected void onDestroy()
 	{
 		// Try to free memory by releasing objects manually
-		mImageView.getDrawable().setCallback(null);
-		mImageView.setImageDrawable(null);
+		if (mImageView.getDrawable() != null)
+		{
+			mImageView.getDrawable().setCallback(null);
+			mImageView.setImageDrawable(null);
+		}
 		
 		super.onDestroy();
 	}

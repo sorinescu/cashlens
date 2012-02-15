@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
 <resources>
     <string name="add">Add</string>
     <string name="delete">Delete</string>
@@ -20,7 +20,6 @@
     <string name="enter_account_name">Please provide a name for the account.</string>
     <string name="are_you_sure">Are you sure ?</string>
     <string name="no_accounts_defined">There are no expense accounts defined.\nPlease define at least one.</string>
-    <string name="no_currencies_defined">There are no currencies defined.\nPlease define at least one.</string>
     <string name="edit">Edit</string>
     <string name="delete_expense">Delete expense</string>
     <string name="expense_deleted">Expense deleted.</string>
@@ -42,7 +41,7 @@
     <string name="custom_interval">Custom interval</string>
     <string name="delete_account_are_you_sure">All expenses belonging to this account will be deleted !\n\nAre you sure ?</string>
     <string name="current_week">Current week</string>
-    <string name="not_set">&lt;not set&gt;</string>
+    <string name="not_set">&amp;lt;not set&amp;gt;</string>
     <string name="fill_amount_before_snapshot">Please enter an amount and select the right account before taking the picture.</string>
     <string name="custom_filter">Custom filter</string>
     <string name="snapshot_params">Snapshot parameters</string>
@@ -57,11 +56,12 @@
     <string name="all_accounts_included">All accounts are included</string>
     <string name="start_date">Start date</string>
     <string name="end_date">End date</string>
-    <string name="select_start_date">Select start date&#8230;</string>
-    <string name="select_end_date">Select end date&#8230;</string>
+    <string name="select_start_date">Select start date…</string>
+    <string name="select_end_date">Select end date…</string>
     <string name="accounts_included">\u0020account(s) are included</string>
     <string name="enable_custom_filter">Enable custom filter</string>
     <string name="user_interface">User interface</string>
     <string name="expense_text_color">Expense text color</string>
     <string name="expense_outline_color">Expense outline color</string>
+    <string name="no_image">No image.</string>
 </resources>
