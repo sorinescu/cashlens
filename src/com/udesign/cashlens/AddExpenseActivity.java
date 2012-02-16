@@ -19,15 +19,18 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
 
 import com.udesign.cashlens.CashLensStorage.Account;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
+import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.hardware.Camera.Size;
 import android.hardware.Sensor;
@@ -85,6 +88,14 @@ public class AddExpenseActivity extends Activity
 	private CashLensStorage mStorage;
 	private SensorEventListener mOrientationListener;
 	private int mPictureRotation = 0;
+	
+	// Preview thumbnail
+	private Size mPreviewSize;
+	private byte[] mRGBPreviewData;
+	private Bitmap mRGBPreviewBitmap;
+	private Bitmap mRGBPreviewRotBitmap;
+	private Canvas mRGBPreviewRotCanvas;
+	
 	public String mExpenseInt;
 	public String mExpenseFrac;
 	public boolean mExpenseDot = false;
@@ -383,25 +394,64 @@ public class AddExpenseActivity extends Activity
 	public void surfaceChanged(SurfaceHolder holder, int format, int width,
 			int height) 
 	{
+		final class MyComparator<T extends Size> implements Comparator<T>
+		{
+        	private int width;
+        	private int height;
+        	
+            public MyComparator(int width, int height)
+			{
+				super();
+				this.width = width;
+				this.height = height;
+			}
+
+			public int compare(Camera.Size o1, Camera.Size o2) 
+			{
+            	int diff1 = Math.abs(o1.width - height) + Math.abs(o1.height - width);
+            	int diff2 = Math.abs(o2.width - height) + Math.abs(o2.height - width);
+                return new Integer(diff1).compareTo(diff2);
+            }
+		}
+		
         // Now that the size is known, set up the camera parameters and begin
         // the preview.
         Camera.Parameters parameters = mCamera.getParameters();
-        parameters.setPreviewSize(width, height);
-    
+
+        // Find optimum preview size by selecting the supported preview size
+        // that is the closest to width x height
+        final List<Size> previewSizes = parameters.getSupportedPreviewSizes();
+        Comparator<Size> comp = new MyComparator<Size>(width, height);
+        Collections.sort(previewSizes, comp);
+
         // for 2.2+, use standard (working) method to put camera in portrait mode
         if (Integer.parseInt(Build.VERSION.SDK) >= 8)
             setCameraDisplayOrientation_2_2(90);
 
-        try
-        {
-        	mCamera.setParameters(parameters);
-        }
-        catch (Exception e)
-        {
-        	e.printStackTrace();
-        }
-        
-        mCamera.startPreview();
+    	for (Size sz : previewSizes)
+    	{
+    		// Use the closest preview size that is actually supported
+	        try
+	        {
+	            parameters.setPreviewSize(sz.width, sz.height);
+	        	mCamera.setParameters(parameters);
+	        	
+	        	mCamera.setPreviewCallback(this);
+	            mCamera.startPreview();
+	            
+	            // Cache these value so we can generate a thumbnail very quickly after
+	            // we take a picture
+	            mPreviewSize = sz;
+	            setupPreviewThumbnail();
+	            
+	            break;
+	        }
+	        catch (Exception e)
+	        {
+	        	e.printStackTrace();
+	        }
+    	}
+    	
         mInPreview = true;
 
         // Enable this if you want continuous autofocus (the camera will search for focus
@@ -418,7 +468,6 @@ public class AddExpenseActivity extends Activity
         try 
         {
            mCamera.setPreviewDisplay(holder);
-           mCamera.setPreviewCallback(this);
         } 
         catch (IOException exception) 
         {
@@ -435,7 +484,11 @@ public class AddExpenseActivity extends Activity
         if (mCamera != null)
         {
 			if (mInPreview)
+			{
+				mCamera.setPreviewCallback(null);
 	        	mCamera.stopPreview();
+			}
+			
 	        mCamera.release();
 	        mCamera = null;
         }
@@ -632,8 +685,22 @@ public class AddExpenseActivity extends Activity
 		
 		updateSaveButtonState();
 		animatePictureThumbnail();
-		
+
+		// User can take another picture, so restart preview
         mCamera.startPreview();
+	}
+
+	private void setupPreviewThumbnail()
+	{
+        mRGBPreviewData = new byte[2 * mPreviewSize.width * mPreviewSize.height];
+		mRGBPreviewBitmap = Bitmap.createBitmap(mPreviewSize.width, mPreviewSize.height, 
+				Config.RGB_565);
+		mRGBPreviewRotBitmap = Bitmap.createBitmap(mPreviewSize.height, mPreviewSize.width, 
+				Config.RGB_565);
+		
+		mRGBPreviewRotCanvas = new Canvas(mRGBPreviewRotBitmap);
+		mRGBPreviewRotCanvas.translate(mPreviewSize.height, 0);
+		mRGBPreviewRotCanvas.rotate(90);
 	}
 	
 	private void animatePictureThumbnail()
@@ -641,27 +708,29 @@ public class AddExpenseActivity extends Activity
 		if (mPreviewData == null)
 			return;
 
-		Camera.Parameters params = mCamera.getParameters();
-		Size sz = params.getPreviewSize();
+//		long t0 = System.nanoTime();
 		
 		// Preview data is in NV21 format (YUV 420); convert to RGB565
-		byte[] rgbData = new byte[2 * sz.width * sz.height];
-		CashLensUtils.nv21ToRGB565(mPreviewData, rgbData, sz.width, sz.height);
+		CashLensUtils.nv21ToRGB565(mPreviewData, mRGBPreviewData, 
+				mPreviewSize.width, mPreviewSize.height);
 		
-		mPreviewData = null;	// free the preview data, if necessary
-
+//		long t1 = System.nanoTime();
+		
 		// Copy RGB565 preview data into bitmap
-		Bitmap snapshot = Bitmap.createBitmap(sz.width, sz.height, Config.RGB_565);
-		snapshot.copyPixelsFromBuffer(ByteBuffer.wrap(rgbData));
+		mRGBPreviewBitmap.copyPixelsFromBuffer(ByteBuffer.wrap(mRGBPreviewData));
+		
+//		long t2 = System.nanoTime();
 		
 		// Rotate bitmap
-		Matrix m = new Matrix();
-		m.postRotate(90);
-		Bitmap thumb = Bitmap.createBitmap(snapshot, 0, 0, sz.width, sz.height, m, false);
+		mRGBPreviewRotCanvas.drawBitmap(mRGBPreviewBitmap, 0f, 0f, null);
+
+//		long t3 = System.nanoTime();
 		
-		rgbData = null;		// free the memory, if necessary
-		
-		mPhotoThumbnail.setImageBitmap(thumb);
+//		Log.w("animatePictureThumbnail", "nv21ToRGB565 (" + ((t1-t0) / 1000) + "us), createBitmap_RGB565(" 
+//				+ ((t2-t1) / 1000) +"us), createBitmap_rot(" + ((t3-t2) / 1000) + "us), TOTAL: " 
+//				+ ((t3-t0) / 1000) + "us");
+
+		mPhotoThumbnail.setImageBitmap(mRGBPreviewRotBitmap);
 		mPhotoThumbnail.setVisibility(View.VISIBLE);
 
 		// The thumbnail will be scaled from full screen to the size of the
@@ -681,6 +750,8 @@ public class AddExpenseActivity extends Activity
 		scaleAnim.setFillAfter(true);
 		
 		mPhotoThumbnail.startAnimation(scaleAnim);
+
+		mPreviewData = null;	// free the preview data, if necessary
 	}
 	
 	private void updateSaveButtonState()
@@ -696,7 +767,24 @@ public class AddExpenseActivity extends Activity
 
 	public void onPreviewFrame(byte[] data, Camera camera)
 	{
-		// Save frame so we can copy it into a thumbnail when a picture is taken
 		mPreviewData = data;
+		
+		// The first time we're called, create two buffers to reuse for every frame.
+		// We need to do this because following the Android instructions on buffer size
+		// is unreliable (the allocated buffer is always too small)
+
+		/*
+		if (!mPreviewWithBuffers)
+		{
+	        mCamera.addCallbackBuffer(new byte[data.length]);
+	        mCamera.addCallbackBuffer(new byte[data.length]);
+
+	        mCamera.setPreviewCallbackWithBuffer(this);
+
+	        mPreviewWithBuffers = true;
+		}
+		else
+			mCamera.addCallbackBuffer(data);	// reuse buffer
+		*/
 	}
 }
