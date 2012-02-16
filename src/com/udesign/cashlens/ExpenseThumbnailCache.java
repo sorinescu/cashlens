@@ -49,7 +49,7 @@ public final class ExpenseThumbnailCache
 			ExpenseThumbnail thumb = thumbs[0];
 			try
 			{
-				storage.loadExpenseThumbnail(thumb);
+				storage.readExpenseThumbnail(thumb);
 				Log.w("LoadThumbnailTask", "Loaded thumbnail with id " + Integer.toString(thumb.id));
 			} catch (Exception e)
 			{
