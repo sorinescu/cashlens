@@ -9,6 +9,14 @@ extern "C" {
 #endif
 /*
  * Class:     com_udesign_cashlens_CashLensUtils
+ * Method:    initLibYUV
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_udesign_cashlens_CashLensUtils_initLibYUV
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     com_udesign_cashlens_CashLensUtils
  * Method:    nv21ToRGB565
  * Signature: ([B[BII)V
  */
