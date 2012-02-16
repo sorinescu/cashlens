@@ -211,6 +211,10 @@ public final class CashLensUtils
 	
 	static {
 		System.loadLibrary("CashLens");
+		initLibYUV();
 	}
+	
+	static public native void initLibYUV();
+	
 	static public native void nv21ToRGB565(byte[] yuvs, byte[] rgbs, int width, int height);
 }
