@@ -15,6 +15,7 @@
  ******************************************************************************/
 package com.udesign.cashlens;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,6 +28,7 @@ import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.TimeZone;
+import java.util.zip.ZipOutputStream;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -49,7 +51,7 @@ public final class CashLensStorage
 	private static CashLensStorage mInstance;
 
 	private static final String DATABASE_NAME = "cashlens.db";
-	private static final int DATABASE_VERSION = 7;
+	public static final int DATABASE_VERSION = 7;
 
 	private ArrayListWithNotify<Account> mAccounts;
 	private ArrayListWithNotify<Currency> mCurrencies;
@@ -1299,7 +1301,7 @@ public final class CashLensStorage
 		return id;
 	}
 
-	public synchronized void loadExpenseThumbnail(ExpenseThumbnail thumb) throws IOException, IllegalAccessException
+	public synchronized void readExpenseThumbnail(ExpenseThumbnail thumb) throws IOException, IllegalAccessException
 	{
 		Cursor cursor = db().query(ExpenseThumbnailsTable.TABLE_NAME,
 				new String[] { ExpenseThumbnailsTable.DATA_PORTRAIT, ExpenseThumbnailsTable.DATA_LANDSCAPE }, 
@@ -1317,5 +1319,14 @@ public final class CashLensStorage
 		Log.w("loadExpenseThumbnail", "Loaded thumbnail: ID " + Integer.toString(thumb.id));
 
 		cursor.close();
+	}
+	
+	public synchronized void exportToFile(String filePath) throws IOException
+	{
+		File outputFile = new File(filePath);
+		
+		ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outputFile)));
+		
+		// TODO implement this
 	}
 }
