@@ -67,7 +67,9 @@ public class AddExpenseActivity extends Activity
 {
 	private RelativeLayout mLayout;
 	private SurfaceView mCameraPreview;
-	private android.hardware.Camera mCamera;
+	private SurfaceHolder mHolder;
+	private boolean mCameraSurfaceValid;
+	private Camera mCamera;
 	private boolean mInPreview = false;
 	private Button mNumButtons[];
 	private Button mDelButton;
@@ -84,7 +86,6 @@ public class AddExpenseActivity extends Activity
 	private Handler mAutoFocusStarter;
 	private Runnable mAutoFocusTask;
 	private byte[] mJPEGData;
-	private byte[] mPreviewData;
 	private CashLensStorage mStorage;
 	private SensorEventListener mOrientationListener;
 	private int mPictureRotation = 0;
@@ -193,9 +194,9 @@ public class AddExpenseActivity extends Activity
 	    position = mAccountsAdapter.getItemPositionById(settings.getLastUsedAccount());
 	    mAccountSpinner.setSelection(position);
 	    
-	    SurfaceHolder holder = mCameraPreview.getHolder();
-		holder.addCallback(this);
-		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+	    mHolder = mCameraPreview.getHolder();
+	    mHolder.addCallback(this);
+	    mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 		
 		// Click listeners
 
@@ -248,10 +249,18 @@ public class AddExpenseActivity extends Activity
 		{
 			public void onClick(View v)
 			{
-				saveExpense();
-				
 				// make sure we can't press Save again
 				mSaveButton.setEnabled(false);
+
+				// save last used account
+		        AppSettings settings = AppSettings.instance(AddExpenseActivity.this);
+		        long id;
+		        
+		        id = mAccountSpinner.getSelectedItemId();
+		        if (id != AdapterView.INVALID_ROW_ID)
+		        	settings.setLastUsedAccount((int)id);
+
+				saveExpense();
 			}
 		});
 		
@@ -358,14 +367,8 @@ public class AddExpenseActivity extends Activity
 			mAutoFocusStarter.removeCallbacks(mAutoFocusTask);
 			mAutoFocusStarter = null;
 		}
-		
-		if (mCamera != null)
-		{
-			if (mInPreview)
-				mCamera.stopPreview();
-	        mCamera.release();
-	        mCamera = null;
-		}
+
+		releaseCamera();
 		
 		// Make sure the data changed listeners are unregistered
 		mAccountsAdapter.releaseByActivity();
@@ -438,6 +441,7 @@ public class AddExpenseActivity extends Activity
 	        	
 	        	mCamera.setPreviewCallback(this);
 	            mCamera.startPreview();
+	            mInPreview = true;
 	            
 	            // Cache these value so we can generate a thumbnail very quickly after
 	            // we take a picture
@@ -452,22 +456,24 @@ public class AddExpenseActivity extends Activity
 	        }
     	}
     	
-        mInPreview = true;
-
         // Enable this if you want continuous autofocus (the camera will search for focus
         // all the time, while the user is typing)
 		Log.w("onAutoFocus", "enable the code below if you want continuous focus");
         //startAutoFocusIfPossible();
 	}
 
-	public void surfaceCreated(SurfaceHolder holder) 
+	private void openCamera()
 	{
-        // The Surface has been created, acquire the camera and tell it where
-        // to draw
+		if (mCamera != null)
+			return;		// already open
+		
+		if (!mCameraSurfaceValid)
+			return;		// nothing to render a preview into
+		
         mCamera = Camera.open();
         try 
         {
-           mCamera.setPreviewDisplay(holder);
+        	mCamera.setPreviewDisplay(mHolder);
         } 
         catch (IOException exception) 
         {
@@ -475,31 +481,41 @@ public class AddExpenseActivity extends Activity
             mCamera = null;
         }
 	}
+	
+	private void releaseCamera()
+	{
+		if (mCamera == null)
+			return;
+		
+		if (mInPreview)
+		{
+			mCamera.setPreviewCallback(null);
+			mCamera.stopPreview();
+			mInPreview = false;
+		}
+			
+        mCamera.release();
+        mCamera = null;
+	}
+	
+	public void surfaceCreated(SurfaceHolder holder) 
+	{
+		// From now on, we can open the camera - we have a surface
+		mCameraSurfaceValid = true;
+		
+        // The Surface has been created, acquire the camera and tell it where
+        // to draw
+		openCamera();
+	}
 
 	public void surfaceDestroyed(SurfaceHolder holder) 
 	{
         // Surface will be destroyed when we return, so stop the preview.
         // Because the CameraDevice object is not a shared resource, it's very
         // important to release it when the activity is paused
-        if (mCamera != null)
-        {
-			if (mInPreview)
-			{
-				mCamera.setPreviewCallback(null);
-	        	mCamera.stopPreview();
-			}
-			
-	        mCamera.release();
-	        mCamera = null;
-        }
-        
-        // save last used account
-        AppSettings settings = AppSettings.instance(this);
-        long id;
-        
-        id = mAccountSpinner.getSelectedItemId();
-        if (id != AdapterView.INVALID_ROW_ID)
-        	settings.setLastUsedAccount((int)id);
+		releaseCamera();
+		
+		mCameraSurfaceValid = false;	// We don't have a surface anymore
 	}
 
 	public void onAutoFocus(boolean success, Camera camera) 
@@ -688,6 +704,7 @@ public class AddExpenseActivity extends Activity
 
 		// User can take another picture, so restart preview
         mCamera.startPreview();
+        mInPreview = true;
 	}
 
 	private void setupPreviewThumbnail()
@@ -705,30 +722,11 @@ public class AddExpenseActivity extends Activity
 	
 	private void animatePictureThumbnail()
 	{
-		if (mPreviewData == null)
-			return;
-
-//		long t0 = System.nanoTime();
-		
-		// Preview data is in NV21 format (YUV 420); convert to RGB565
-		CashLensUtils.nv21ToRGB565(mPreviewData, mRGBPreviewData, 
-				mPreviewSize.width, mPreviewSize.height);
-		
-//		long t1 = System.nanoTime();
-		
 		// Copy RGB565 preview data into bitmap
 		mRGBPreviewBitmap.copyPixelsFromBuffer(ByteBuffer.wrap(mRGBPreviewData));
 		
-//		long t2 = System.nanoTime();
-		
 		// Rotate bitmap
 		mRGBPreviewRotCanvas.drawBitmap(mRGBPreviewBitmap, 0f, 0f, null);
-
-//		long t3 = System.nanoTime();
-		
-//		Log.w("animatePictureThumbnail", "nv21ToRGB565 (" + ((t1-t0) / 1000) + "us), createBitmap_RGB565(" 
-//				+ ((t2-t1) / 1000) +"us), createBitmap_rot(" + ((t3-t2) / 1000) + "us), TOTAL: " 
-//				+ ((t3-t0) / 1000) + "us");
 
 		mPhotoThumbnail.setImageBitmap(mRGBPreviewRotBitmap);
 		mPhotoThumbnail.setVisibility(View.VISIBLE);
@@ -750,8 +748,6 @@ public class AddExpenseActivity extends Activity
 		scaleAnim.setFillAfter(true);
 		
 		mPhotoThumbnail.startAnimation(scaleAnim);
-
-		mPreviewData = null;	// free the preview data, if necessary
 	}
 	
 	private void updateSaveButtonState()
@@ -767,24 +763,30 @@ public class AddExpenseActivity extends Activity
 
 	public void onPreviewFrame(byte[] data, Camera camera)
 	{
-		mPreviewData = data;
+		// Preview data is in NV21 format (YUV 420); convert to RGB565
+		CashLensUtils.nv21ToRGB565(data, mRGBPreviewData, 
+				mPreviewSize.width, mPreviewSize.height);
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onResume()
+	 */
+	@Override
+	protected void onResume()
+	{
+		super.onResume();
 		
-		// The first time we're called, create two buffers to reuse for every frame.
-		// We need to do this because following the Android instructions on buffer size
-		// is unreliable (the allocated buffer is always too small)
+		openCamera();
+	}
 
-		/*
-		if (!mPreviewWithBuffers)
-		{
-	        mCamera.addCallbackBuffer(new byte[data.length]);
-	        mCamera.addCallbackBuffer(new byte[data.length]);
-
-	        mCamera.setPreviewCallbackWithBuffer(this);
-
-	        mPreviewWithBuffers = true;
-		}
-		else
-			mCamera.addCallbackBuffer(data);	// reuse buffer
-		*/
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onPause()
+	 */
+	@Override
+	protected void onPause()
+	{
+		super.onPause();
+		
+		releaseCamera();
 	}
 }
