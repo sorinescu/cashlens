@@ -15,7 +15,6 @@
  ******************************************************************************/
 package com.udesign.cashlens;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,7 +27,6 @@ import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.TimeZone;
-import java.util.zip.ZipOutputStream;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -1323,9 +1321,9 @@ public final class CashLensStorage
 	
 	public synchronized void exportToFile(String filePath) throws IOException
 	{
-		File outputFile = new File(filePath);
+		//File outputFile = new File(filePath);
 		
-		ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outputFile)));
+		//ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(outputFile)));
 		
 		// TODO implement this
 	}
