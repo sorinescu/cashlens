@@ -15,7 +15,6 @@
  ******************************************************************************/
 package com.udesign.cashlens;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
@@ -417,6 +416,9 @@ public class AddExpenseActivity extends Activity
             }
 		}
 		
+		if (mCamera == null)
+			return;		// camera not working; bail
+		
         // Now that the size is known, set up the camera parameters and begin
         // the preview.
         Camera.Parameters parameters = mCamera.getParameters();
@@ -470,15 +472,25 @@ public class AddExpenseActivity extends Activity
 		if (!mCameraSurfaceValid)
 			return;		// nothing to render a preview into
 		
-        mCamera = Camera.open();
         try 
         {
+            mCamera = Camera.open();
         	mCamera.setPreviewDisplay(mHolder);
+
+        	mSnapshotButton.setEnabled(true);
         } 
-        catch (IOException exception) 
+        catch (Exception e) 
         {
-            mCamera.release();
-            mCamera = null;
+        	if (mCamera != null)
+        	{
+        		mCamera.release();
+        		mCamera = null;
+        	}
+        	
+            // Can no longer take pictures
+            mSnapshotButton.setEnabled(false);
+            
+            Toast.makeText(this, e.getMessage(),Toast.LENGTH_SHORT);
         }
 	}
 	
@@ -489,12 +501,13 @@ public class AddExpenseActivity extends Activity
 		
 		if (mInPreview)
 		{
-			mCamera.setPreviewCallback(null);
 			mCamera.stopPreview();
 			mInPreview = false;
 		}
 			
-        mCamera.release();
+		mCamera.setPreviewCallback(null);
+
+		mCamera.release();
         mCamera = null;
 	}
 	
@@ -622,6 +635,10 @@ public class AddExpenseActivity extends Activity
 	        {
 	        	e.printStackTrace();
 	        }
+	        
+	        // First, stop preview, otherwise the camera can crash
+	        mCamera.stopPreview();
+	        mInPreview = false;
 	        
 			mCamera.takePicture(null, null, this);
 			return true;
