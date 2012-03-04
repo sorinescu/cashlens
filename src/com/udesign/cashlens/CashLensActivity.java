@@ -55,7 +55,6 @@ public final class CashLensActivity extends Activity
     private View.OnTouchListener mOnTouchListener;
 
     private static final int SWIPE_MIN_DISTANCE = 120;
-    private static final int SWIPE_MAX_OFF_PATH = 250;
 	private static final int SWIPE_THRESHOLD_VELOCITY = 200;
 	
 	private static final int RESULT_CODE_SETTINGS = 1;
