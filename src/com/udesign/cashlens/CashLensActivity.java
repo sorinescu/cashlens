@@ -87,28 +87,27 @@ public final class CashLensActivity extends Activity
 			{
 	            try 
 	            {
-	                if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH)
-	                    return false;
-	                
 	                // right to left swipe
 	                if(e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
 	                	mFlipExpenses.setInAnimation(mSlideLeftIn);
 	                	mFlipExpenses.setOutAnimation(mSlideLeftOut);
 	                	mFlipExpenses.showNext();
+		                updateCurrentExpensesView();
+		                return true;
 	                }  else if (e2.getX() - e1.getX() > SWIPE_MIN_DISTANCE && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
 	                	mFlipExpenses.setInAnimation(mSlideRightIn);
 	                	mFlipExpenses.setOutAnimation(mSlideRightOut);
 	                	mFlipExpenses.showPrevious();
+		                updateCurrentExpensesView();
+		                return true;
 	                }
-	                
-	                updateCurrentExpensesView();
 	            } 
 	            catch (Exception e) 
 	            {
 	                // nothing
 	            }
 
-	            return true;
+	            return false;
 			}
 		});
 		
