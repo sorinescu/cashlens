@@ -92,7 +92,7 @@ public final class AddEditAccount extends PreferenceActivity
 		else
 			mAccount = mStorage.getAccount(accountId);
 		
-		mCurrencies = mStorage.getCurencies();
+		mCurrencies = mStorage.getCurrencies();
 		
 		OnPreferenceChangeListener onPreferenceChangeListener = new OnPreferenceChangeListener()
 		{
