@@ -124,22 +124,27 @@ public final class CashLensStorage
 		public static void onCreate(SQLiteDatabase db)
 		{
 			db.execSQL("CREATE TABLE " + TABLE_NAME + " (" 
-					+ AccountsTable._ID	+ " INTEGER PRIMARY KEY AUTOINCREMENT," 
-					+ AccountsTable.NAME + " TEXT,"
-					+ AccountsTable.CURRENCY + " INTEGER,"
-					+ AccountsTable.MONTH_START + " INTEGER"
+					+ _ID	+ " INTEGER PRIMARY KEY AUTOINCREMENT," 
+					+ NAME + " TEXT,"
+					+ CURRENCY + " INTEGER,"
+					+ MONTH_START + " INTEGER"
 					+ ");");
 		}
 
 		public static void onUpgrade(SQLiteDatabase db, int oldVersion,
 				int newVersion)
 		{
-			// TODO this is not acceptable; upgrade DB
-			Log.w(AccountsTable.class.getName(),
-					"Upgrading database from version " + oldVersion + " to "
-							+ newVersion + ", which will destroy all old data");
-			db.execSQL("DROP TABLE IF EXISTS " + AccountsTable.TABLE_NAME);
-			onCreate(db);
+			for (int ver = oldVersion + 1; ver <= newVersion; ++ver)
+			{
+				switch (ver)
+				{
+				default:
+					Log.w(TABLE_NAME, "Upgrading database from version " + oldVersion + 
+							" to unsupported version " + ver + "; doing nothing");
+					//db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+					//onCreate(db);
+				}
+			}
 		}
 	}
 
@@ -352,20 +357,20 @@ public final class CashLensStorage
 
 		public static void onCreate(SQLiteDatabase db)
 		{
-			db.execSQL("CREATE TABLE " + ExpensesTable.TABLE_NAME + " ("
-					+ ExpensesTable._ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-					+ ExpensesTable.ACCOUNT + " INTEGER,"
-					+ ExpensesTable.AMOUNT + " INTEGER," 
-					+ ExpensesTable.DATE + " INTEGER NOT NULL," 
-					+ ExpensesTable.DESCRIPTION + " TEXT,"
-					+ ExpensesTable.IMAGE_FILENAME + " TEXT,"
-					+ ExpensesTable.IMAGE_THUMBNAIL + " INTEGER,"
-					+ ExpensesTable.AUDIO_FILENAME + " TEXT," 
+			db.execSQL("CREATE TABLE " + TABLE_NAME + " ("
+					+_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+					+ ACCOUNT + " INTEGER,"
+					+ AMOUNT + " INTEGER," 
+					+ DATE + " INTEGER NOT NULL," 
+					+ DESCRIPTION + " TEXT,"
+					+ IMAGE_FILENAME + " TEXT,"
+					+ IMAGE_THUMBNAIL + " INTEGER,"
+					+ AUDIO_FILENAME + " TEXT," 
 					+ "FOREIGN KEY ("
-						+ ExpensesTable.ACCOUNT + ") REFERENCES "
+						+ ACCOUNT + ") REFERENCES "
 						+ AccountsTable.TABLE_NAME + "(" + AccountsTable._ID + "),"
 					+ "FOREIGN KEY (" 
-						+ ExpensesTable.IMAGE_THUMBNAIL + ") REFERENCES " 
+						+ IMAGE_THUMBNAIL + ") REFERENCES " 
 						+ ExpenseThumbnailsTable.TABLE_NAME + "(" + ExpenseThumbnailsTable._ID + ")" 
 					+ ");");
 		}
@@ -373,12 +378,17 @@ public final class CashLensStorage
 		public static void onUpgrade(SQLiteDatabase db, int oldVersion,
 				int newVersion)
 		{
-			// TODO this is not acceptable; upgrade DB
-			Log.w(ExpensesTable.class.getName(),
-					"Upgrading database from version " + oldVersion + " to "
-							+ newVersion + ", which will destroy all old data");
-			db.execSQL("DROP TABLE IF EXISTS " + ExpensesTable.TABLE_NAME);
-			onCreate(db);
+			for (int ver = oldVersion + 1; ver <= newVersion; ++ver)
+			{
+				switch (ver)
+				{
+				default:
+					Log.w(TABLE_NAME, "Upgrading database from version " + oldVersion + 
+							" to unsupported version " + ver + "; doing nothing");
+					//db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+					//onCreate(db);
+				}
+			}
 		}
 	}
 
@@ -414,21 +424,26 @@ public final class CashLensStorage
 		public static void onCreate(SQLiteDatabase db)
 		{
 			db.execSQL("CREATE TABLE " + TABLE_NAME + " (" 
-					+ ExpenseThumbnailsTable._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," 
-					+ ExpenseThumbnailsTable.DATA_PORTRAIT + " BLOB,"
-					+ ExpenseThumbnailsTable.DATA_LANDSCAPE + " BLOB"
+					+ _ID + " INTEGER PRIMARY KEY AUTOINCREMENT," 
+					+ DATA_PORTRAIT + " BLOB,"
+					+ DATA_LANDSCAPE + " BLOB"
 					+ ");");
 		}
 
 		public static void onUpgrade(SQLiteDatabase db, int oldVersion,
 				int newVersion)
 		{
-			// TODO this is not acceptable; upgrade DB
-			Log.w(ExpenseThumbnailsTable.class.getName(),
-					"Upgrading database from version " + oldVersion + " to "
-							+ newVersion + ", which will destroy all old data");
-			db.execSQL("DROP TABLE IF EXISTS " + ExpenseThumbnailsTable.TABLE_NAME);
-			onCreate(db);
+			for (int ver = oldVersion + 1; ver <= newVersion; ++ver)
+			{
+				switch (ver)
+				{
+				default:
+					Log.w(TABLE_NAME, "Upgrading database from version " + oldVersion + 
+							" to unsupported version " + ver + "; doing nothing");
+					//db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+					//onCreate(db);
+				}
+			}
 		}
 	}
 
@@ -481,6 +496,15 @@ public final class CashLensStorage
 	{
 		for (Currency currency : mCurrencies)
 			if (currency.id == currencyId)
+				return currency;
+		
+		return null;
+	}
+
+	public synchronized Currency getCurrencyByCode(String currencyCode)
+	{
+		for (Currency currency : mCurrencies)
+			if (currency.code.equalsIgnoreCase(currencyCode))
 				return currency;
 		
 		return null;
@@ -783,7 +807,7 @@ public final class CashLensStorage
 		mCurrencies.notifyDataChanged();
 	}
 
-	public synchronized ArrayListWithNotify<Currency> getCurencies()
+	public synchronized ArrayListWithNotify<Currency> getCurrencies()
 	{
 		return mCurrencies;
 	}
