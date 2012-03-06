@@ -64,4 +64,10 @@
     <string name="expense_text_color">Expense text color</string>
     <string name="expense_outline_color">Expense outline color</string>
     <string name="no_image">No image.</string>
+    <string name="exchange_rate_service">Exchange rate service</string>
+    <string name="from">From</string>
+    <string name="to">To</string>
+    <string name="fee_percent">Extra fee (%)</string>
+    <string name="result">Result</string>
+    <string name="use">Use</string>
 </resources>
