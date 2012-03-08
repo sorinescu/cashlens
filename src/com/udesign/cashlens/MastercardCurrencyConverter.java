@@ -25,6 +25,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -39,10 +41,22 @@ import com.udesign.cashlens.CashLensStorage.Currency;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.util.Xml;
 
 final class MastercardCurrencyConverter extends CurrencyConverter
 {
+	// TODO maybe download these at runtime ?
+	private final String[] mSupportedCurrCodes = {
+			"AED", "ARS", "AUD", "AZN", "BAM", "BGN", "BRL", "CAD", "CHF", "CLP",
+			"CNY", "CZK", "DKK", "EGP", "EUR", "GBP", "HKD", "HRK", "HUF", "ILS",
+			"INR", "ISK", "JPY", "LTL", "LVL", "MAD", "MXN", "MYR", "NOK", "NZD",
+			"PHP", "PLN", "RON", "RSD", "RUB", "SAR", "SEK", "SGD", "THB", "TND", 
+			"TRY", "TWD", "UAH", "USD", "ZAR"
+	};
+	
+	private static HashSet<Currency> mSupportedCurrencies;
+	
 	// Fake trust manager, allowing us to ignore SSL certificate errors.
 	// @see http://groups.google.com/group/android-developers/browse_thread/thread/62d856cdcfa9f16e?pli=1
 	private static class FakeX509TrustManager implements X509TrustManager 
@@ -92,8 +106,10 @@ final class MastercardCurrencyConverter extends CurrencyConverter
         } 
 	} 
 	
-	MastercardCurrencyConverter()
+	MastercardCurrencyConverter(Context context)
 	{
+		super(context);
+		
 		FakeX509TrustManager.allowAllSSL();
 	}
 	
@@ -121,7 +137,7 @@ final class MastercardCurrencyConverter extends CurrencyConverter
 	private HashMap<Integer,Float> readRatesFromXML(InputStream xmlStream)
 	{
 		XmlPullParser xmlParser = Xml.newPullParser();
-		HashMap<Integer,Float> currencyToRate = new HashMap<Integer, Float>();
+		HashMap<Integer,Float> currencyToRate = null;
 		Currency currency = null;
 		
 		try
@@ -138,11 +154,17 @@ final class MastercardCurrencyConverter extends CurrencyConverter
 		        {
 	                String s = xmlParser.getName();
 	 
+	                Log.d("Mastercard", "got XML tag " + s);
+	                
 	                if (s.equalsIgnoreCase("ALPHA_CURENCY_CODE"))
 	                	currency = storage.getCurrencyByCode(xmlParser.nextText());
 	                else if (s.equalsIgnoreCase("CONVERSION_RATE"))
 	                {
 	                	float rate = Float.parseFloat(xmlParser.nextText());
+	                	
+	                	if (currencyToRate == null)
+	                		currencyToRate = new HashMap<Integer, Float>();
+	                	
 	                	currencyToRate.put(currency.id, rate);
 	                	currency = null;
 	                }
@@ -164,7 +186,7 @@ final class MastercardCurrencyConverter extends CurrencyConverter
 	{
 		StringBuffer urlParameters = new StringBuffer();
 		
-		SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
+		SimpleDateFormat format = new SimpleDateFormat("MM/dd/yyyy");
 		
 		urlParameters.append("service=getExchngRateDetails");
 		urlParameters.append("&baseCurrency=" + rates.baseCurrency.code);
@@ -174,12 +196,14 @@ final class MastercardCurrencyConverter extends CurrencyConverter
 		{
 			HttpsURLConnection con = (HttpsURLConnection) new URL(
 					"https://www.mastercard.com/psder/eu/callPsder.do").openConnection();
+			con.setAllowUserInteraction(false);
+		    con.setInstanceFollowRedirects(true);
 			con.setRequestMethod("POST"); 
 			con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded"); 
 			con.setRequestProperty("Content-Length", Integer.toString(urlParameters.length())); 
 			con.setRequestProperty("Content-Language", "en-US"); 
 			con.setRequestProperty("Connection", "close"); 
-			con.setUseCaches (false); 
+			con.setUseCaches(false); 
 			con.setDoOutput(true); 
 			con.setDoInput(true); 
 	
@@ -193,10 +217,46 @@ final class MastercardCurrencyConverter extends CurrencyConverter
 			
 			InputStream rd = con.getInputStream();
 			rates.currencyIdToRate = readRatesFromXML(rd);
+			
+			if (rates.currencyIdToRate == null)
+				rates.errorMsg = mAppContext.getResources().getString(R.string.no_exchange_rates_for_date); 
 		} 
 		catch (Exception e)
 		{
 			e.printStackTrace();
+
+			rates.errorMsg = mAppContext.getResources().getString(R.string.cant_get_exchange_rates_connect_to_net);
 		} 
+	}
+
+	@Override
+	public Set<Currency> supportedCurrencies()
+	{
+		if (mSupportedCurrencies == null)
+		{
+			CashLensStorage storage;
+			try
+			{
+				storage = CashLensStorage.instance(null);
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+				return null;
+			}
+
+			mSupportedCurrencies = new HashSet<Currency>();
+		
+			for (int i=0; i < mSupportedCurrCodes.length; ++i)
+			{
+				Currency currency = storage.getCurrencyByCode(mSupportedCurrCodes[i]);
+				if (currency == null)
+					continue;	// should throw exception
+				
+				mSupportedCurrencies.add(currency);
+			}
+		}
+		
+		return mSupportedCurrencies;
 	}
 }
