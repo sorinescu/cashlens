@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <jardesc>
-    <jar path="Cash Lens/thirdparty/DatePreference/DatePreference/bin/DatePreference.jar"/>
+    <jar path="CashLens/thirdparty/DatePreference/DatePreference/bin/DatePreference.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/DatePreference/default.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
@@ -11,8 +11,6 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
-        <javaElement handleIdentifier="=DatePreference/src"/>
         <file path="/DatePreference/.classpath"/>
-        <file path="/DatePreference/.project"/>
     </selectedElements>
 </jardesc>
