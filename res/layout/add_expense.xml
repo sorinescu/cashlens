@@ -193,14 +193,13 @@
             android:text="0" />
 
         <Button
-            android:id="@+id/btnUnused1"
+            android:id="@+id/btnCurrencyConvert"
             style="@style/large_button_text"
             android:layout_width="0dp"
             android:layout_height="fill_parent"
             android:layout_weight="1"
             android:background="@drawable/rounded_translucent_button"
-            android:text=""
-            android:visibility="invisible" />
+            android:text="€->$" />
     </LinearLayout>
 
     <LinearLayout
