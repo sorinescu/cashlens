@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+   	android:layout_width="match_parent"
+   	android:layout_height="match_parent"
+   	android:orientation="vertical" >
+   	
+	<RelativeLayout
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content" >
+	
+	    <RelativeLayout
+	        android:id="@+id/resultProgressErrorLayout"
+    		android:layout_width="match_parent"
+    		android:layout_height="wrap_content" >
+    		
+	        <RelativeLayout
+	            android:id="@+id/resultLayout"
+    			android:layout_width="match_parent"
+    			android:layout_height="wrap_content">
+    			
+			    <TextView
+			        android:id="@+id/textView7"
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:layout_alignParentTop="true"
+			        android:layout_alignParentLeft="true"
+			        android:layout_alignBaseline="@+id/txtResult"
+			        android:gravity="center_vertical"
+			        android:text="@string/result"
+			        android:textAppearance="?android:attr/textAppearanceLarge" />
+			    
+			    <EditText
+			        android:id="@+id/txtResult"
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:layout_alignParentTop="true"
+			        android:layout_toLeftOf="@+id/btnUse"
+			        android:layout_toRightOf="@+id/textView7"
+			        android:editable="false"
+			        android:focusable="false"
+			        android:inputType="numberDecimal" />
+			
+			    <Button
+			        android:id="@+id/btnUse"
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:layout_alignParentTop="true"
+			        android:layout_alignParentRight="true"
+			        android:textAppearance="?android:attr/textAppearanceLarge"
+			        android:text="@string/use" />
+			    
+			</RelativeLayout>
+			
+		    <ProgressBar
+		        android:id="@+id/loadingRates"
+		        style="?android:attr/progressBarStyleHorizontal"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentTop="true"
+		        android:layout_alignParentLeft="true"
+		        android:indeterminateOnly="true"
+		        android:visibility="gone" />
+		
+		    <TextView
+		        android:id="@+id/txtError"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentTop="true"
+		        android:layout_alignParentLeft="true"
+		        android:text="@string/currency_conversion_unavailable"
+		        android:visibility="gone" />
+		    	    
+	    </RelativeLayout>
+	
+	    <ImageView
+	        android:id="@+id/line"
+	 		android:layout_width="match_parent"
+	 		android:layout_height="wrap_content"
+	        android:scaleType="fitXY"
+	        android:padding="8dip"
+	 		android:layout_below="@+id/resultProgressErrorLayout"
+	 		android:src="@android:drawable/divider_horizontal_bright" />
+	    
+	</RelativeLayout>    
+
+	<ScrollView
+    	android:layout_width="match_parent"
+    	android:layout_height="match_parent" >
+	
+		<RelativeLayout
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:orientation="vertical" >
+		
+		    <TextView
+		        android:id="@+id/textView2"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignBottom="@+id/spinFromCurr"
+		        android:layout_alignParentLeft="true"
+		        android:layout_alignParentTop="true"
+		        android:gravity="center_vertical"
+		        android:text="@string/from"
+		        android:textAppearance="?android:attr/textAppearanceLarge" />
+		
+		    <Spinner
+		        android:id="@+id/spinFromCurr"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentRight="true"
+		        android:layout_alignParentTop="true"
+		        android:layout_toRightOf="@+id/textView2" />
+		
+		    <TextView
+		        android:id="@+id/textView3"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignBottom="@+id/spinToCurr"
+		        android:layout_alignParentLeft="true"
+		        android:layout_alignRight="@+id/textView2"
+		        android:layout_below="@+id/spinFromCurr"
+		        android:gravity="center_vertical"
+		        android:text="@string/to"
+		        android:textAppearance="?android:attr/textAppearanceLarge" />
+		
+		    <Spinner
+		        android:id="@+id/spinToCurr"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentRight="true"
+		        android:layout_below="@+id/spinFromCurr"
+		        android:layout_toRightOf="@+id/textView3" />
+		
+		    <TextView
+		        android:id="@+id/textView6"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentLeft="true"
+		        android:layout_alignParentRight="true"
+		        android:layout_below="@+id/spinToCurr"
+		        android:text="@string/date"
+		        android:textAppearance="?android:attr/textAppearanceLarge" />
+		
+		    <com.udesign.cashlens.DatePickerWithDialog
+		        android:id="@+id/date"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentLeft="true"
+		        android:layout_alignParentRight="true"
+		        android:layout_below="@+id/textView6" />
+		
+		    <TextView
+		        android:id="@+id/textView1"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentLeft="true"
+		        android:layout_alignParentRight="true"
+		        android:layout_below="@+id/date"
+		        android:text="@string/exchange_rate_service"
+		        android:textAppearance="?android:attr/textAppearanceLarge" />
+		
+		    <Spinner
+		        android:id="@+id/spinExchgRateService"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentLeft="true"
+		        android:layout_below="@+id/textView1" />
+		
+		    <TextView
+		        android:id="@+id/textView4"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignBottom="@+id/txtAmount"
+		        android:layout_alignParentLeft="true"
+		        android:layout_alignRight="@+id/textView5"
+		        android:layout_below="@+id/spinExchgRateService"
+		        android:gravity="center_vertical"
+		        android:text="@string/amount"
+		        android:textAppearance="?android:attr/textAppearanceLarge" />
+		
+		    <EditText
+		        android:id="@+id/txtAmount"
+		        android:layout_width="match_parent"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentRight="true"
+		        android:layout_below="@+id/spinExchgRateService"
+		        android:layout_toRightOf="@+id/textView5"
+		        android:inputType="numberDecimal" >
+		
+		        <requestFocus />
+		    </EditText>
+		
+		    <TextView
+		        android:id="@+id/textView5"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignBottom="@+id/txtFee"
+		        android:layout_alignParentLeft="true"
+		        android:layout_below="@+id/textView4"
+		        android:gravity="center_vertical"
+		        android:text="@string/fee_percent"
+		        android:textAppearance="?android:attr/textAppearanceLarge" />
+		
+		    <EditText
+		        android:id="@+id/txtFee"
+		        android:layout_width="wrap_content"
+		        android:layout_height="wrap_content"
+		        android:layout_alignParentRight="true"
+		        android:layout_below="@+id/txtAmount"
+		        android:layout_toRightOf="@+id/textView5"
+		        android:inputType="numberDecimal" />
+		
+		</RelativeLayout>
+	</ScrollView>
+</LinearLayout>
