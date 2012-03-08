@@ -9,8 +9,11 @@
     <!-- <uses-permission android:name="android.permission.RECORD_AUDIO"/> -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     
-    <!--  for CashLensUtils.getDeviceId (read IMEI)  -->
+    <!-- for CashLensUtils.getDeviceId (read IMEI) -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" android:required="false" />    
+    
+    <!-- for currency conversion -->
+    <uses-permission android:name="android.permission.INTERNET" />
     
     <uses-feature android:required="true" android:name="android.hardware.camera"/>
     <uses-feature android:name="android.hardware.camera.autofocus"/>
@@ -55,6 +58,10 @@
         <activity
             android:label="@string/custom_filter"
             android:name=".CustomExpenseFilterActivity" >
+        </activity>
+        <activity
+            android:label="@string/currency_conversion"
+            android:name=".CurrencyConversionActivity" >
         </activity>
         </application>
 
