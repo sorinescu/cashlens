@@ -70,4 +70,9 @@
     <string name="fee_percent">Extra fee (%)</string>
     <string name="result">Result</string>
     <string name="use">Use</string>
+    <string name="currency_conversion">Currency conversion</string>
+    <string name="no_exchange_rates_for_date">The exchange rates are not available for this date.\nPlease select a different one.</string>
+    <string name="cant_get_exchange_rates_connect_to_net">Unable to retrieve the exchange rates.\nPlease make sure you are connected to the Internet.</string>
+    <string name="currency_not_supported">Currency not supported:\u0020</string>
+    <string name="currency_conversion_unavailable">Currency conversion is not available.</string>
 </resources>
