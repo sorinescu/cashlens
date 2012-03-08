@@ -69,7 +69,7 @@ public final class AccountsActivity extends Activity
 			String html = "<big>" + account.name + "</big>" +  "<br/>";
 			
 			Currency currency = account.getCurrency();
-	        html += "<small>" + currency.fullName() + "</small>" + "<br/>"; 
+	        html += "<small>" + currency.displayName() + "</small>" + "<br/>"; 
 	        
 	        html += "<small>" + parent.getContext().getString(R.string.month_start) + ": " 
 	        		+ Integer.toString(account.monthStartDay) + "</small>";

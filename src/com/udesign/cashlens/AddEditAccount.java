@@ -198,7 +198,7 @@ public final class AddEditAccount extends PreferenceActivity
 		if (mAccount.currencyId > 0)
 		{
 			Currency currency = mStorage.getCurrency(mAccount.currencyId);
-			mCurrency.setSummary(currency.fullName());
+			mCurrency.setSummary(currency.displayName());
 		}
 		else
 			mCurrency.setSummary(R.string.not_set);

@@ -161,7 +161,7 @@ public final class CashLensStorage
 			return name.compareTo(another.name);
 		}
 		
-		public String fullName()
+		public String displayName()
 		{
 			return name + " (" + code + ")";
 		}
@@ -504,7 +504,7 @@ public final class CashLensStorage
 	public synchronized Currency getCurrencyByCode(String currencyCode)
 	{
 		for (Currency currency : mCurrencies)
-			if (currency.code.equalsIgnoreCase(currencyCode))
+			if (currency.code != null && currency.code.equalsIgnoreCase(currencyCode))
 				return currency;
 		
 		return null;

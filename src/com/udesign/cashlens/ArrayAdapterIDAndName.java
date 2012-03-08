@@ -36,6 +36,11 @@ public class ArrayAdapterIDAndName<T extends ArrayAdapterIDAndName.IDAndName> ex
 	{
 		int id;
 		String name;
+		
+		String displayName()
+		{
+			return name;
+		}
 	}
 
 	public ArrayAdapterIDAndName(Context context, ArrayListWithNotify<T> items) 
@@ -120,7 +125,7 @@ public class ArrayAdapterIDAndName<T extends ArrayAdapterIDAndName.IDAndName> ex
 		else
 			textView = (TextView)view.getTag();
 		
-		textView.setText(mItems.get(position).name);
+		textView.setText(mItems.get(position).displayName());
 		return view;
 	}
 
