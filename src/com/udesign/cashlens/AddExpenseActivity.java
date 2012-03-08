@@ -26,6 +26,7 @@ import java.util.List;
 import com.udesign.cashlens.CashLensStorage.Account;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -72,6 +73,7 @@ public class AddExpenseActivity extends Activity
 	private boolean mInPreview = false;
 	private Button mNumButtons[];
 	private Button mDelButton;
+	private Button mCurrConvButton;
 	private Button mDotButton;
 	private TextView mExpenseText;
 	private EditText mDescriptionText;
@@ -170,6 +172,7 @@ public class AddExpenseActivity extends Activity
 		mNumButtons[9] = (Button)findViewById(R.id.btn9);
 		
 		mDelButton = (Button)findViewById(R.id.btnDel);
+		mCurrConvButton = (Button)findViewById(R.id.btnCurrencyConvert);
 		mDotButton = (Button)findViewById(R.id.btnDot);
 		
 		mPhotoThumbnail = (ImageView)findViewById(R.id.photoView);
@@ -228,6 +231,20 @@ public class AddExpenseActivity extends Activity
 				
 				parent.mExpenseDot = true;
 				parent.updateExpenseText();
+			}
+		});
+		
+		mCurrConvButton.setOnClickListener(new OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				Intent currConv = new Intent(AddExpenseActivity.this,
+						CurrencyConversionActivity.class);
+				Account account = (Account)mAccountSpinner.getSelectedItem();
+
+				currConv.putExtra("to_currency", account.getCurrency().id);
+				currConv.putExtra("amount", getExpenseFixedPoint());
+				startActivityForResult(currConv, 0);
 			}
 		});
 		
@@ -346,6 +363,22 @@ public class AddExpenseActivity extends Activity
 			val += Integer.parseInt(mExpenseFrac) % 100;	// to be safe
 		
 		return val;
+	}
+	
+	protected void setExpenseFixedPoint(int amount)
+	{
+		mExpenseDot = false;
+		mExpenseInt = "";
+		mExpenseFrac = "";
+		if (amount != 0)
+		{
+			mExpenseInt = Integer.toString(amount / 100);
+			if (amount % 100 != 0)
+			{
+				mExpenseDot = true;
+				mExpenseFrac = Integer.toString(amount % 100);
+			}
+		}
 	}
 	
 	public void updateExpenseText()
@@ -805,5 +838,18 @@ public class AddExpenseActivity extends Activity
 		super.onPause();
 		
 		releaseCamera();
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onActivityResult(int, int, android.content.Intent)
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
+		super.onActivityResult(requestCode, resultCode, data);
+		
+		// resultCode is actually converted amount (fixed point)
+		setExpenseFixedPoint(resultCode);
+		updateExpenseText();
 	}
 }
