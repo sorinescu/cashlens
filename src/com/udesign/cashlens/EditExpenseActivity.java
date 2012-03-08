@@ -45,8 +45,8 @@ public class EditExpenseActivity extends Activity
 	protected EditText mAmountTxt;
 	private Spinner mAccountSpinner;
 	private ArrayAdapterIDAndName<Account> mAccountsAdapter;
-	protected DatePicker mDatePicker;
-	protected TimePicker mTimePicker;
+	protected DatePickerWithDialog mDatePicker;
+	protected TimePickerWithDialog mTimePicker;
 	protected Button mSaveButton;
 	protected Button mDiscardButton;
 	protected boolean mChanged;
@@ -88,8 +88,8 @@ public class EditExpenseActivity extends Activity
 		mDiscardButton = (Button)findViewById(R.id.btnDiscard);
 		mAmountTxt = (EditText)findViewById(R.id.amountTxt);
 		mAccountSpinner = (Spinner)findViewById(R.id.spinAccount);
-		mDatePicker = (DatePicker)findViewById(R.id.datePicker1);
-		mTimePicker = (TimePicker)findViewById(R.id.timePicker1);
+		mDatePicker = (DatePickerWithDialog)findViewById(R.id.datePicker1);
+		mTimePicker = (TimePickerWithDialog)findViewById(R.id.timePicker1);
 		
 		mAmountTxt.setText(mExpense.amountToString());
 		mAmountTxt.setRawInputType(Configuration.KEYBOARD_12KEY);	// phone keypad
