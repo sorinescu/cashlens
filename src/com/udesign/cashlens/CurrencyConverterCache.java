@@ -18,6 +18,8 @@ package com.udesign.cashlens;
 import java.util.ArrayList;
 import java.util.Date;
 
+import android.content.Context;
+
 import com.udesign.cashlens.CashLensStorage.Currency;
 import com.udesign.cashlens.CurrencyConverter.OnExchangeRatesAvailableListener;
 
@@ -28,18 +30,18 @@ final class CurrencyConverterCache implements OnExchangeRatesAvailableListener
 	private ArrayList<OnExchangeRatesAvailableListener> mListeners = 
 			new ArrayList<CurrencyConverter.OnExchangeRatesAvailableListener>();
 	
-	private CurrencyConverterCache()
+	private CurrencyConverterCache(Context context)
 	{
 		// TODO add other converters (XE, Visa)
-		MastercardCurrencyConverter mc = new MastercardCurrencyConverter();
+		MastercardCurrencyConverter mc = new MastercardCurrencyConverter(context);
 		mc.setOnExchangeRatesAvailableListener(this);
 		mConverters.add(mc);
 	}
 	
-	public static CurrencyConverterCache instance()
+	public static CurrencyConverterCache instance(Context context)
 	{
 		if (mInstance == null)
-			mInstance = new CurrencyConverterCache();
+			mInstance = new CurrencyConverterCache(context.getApplicationContext());
 		
 		return mInstance;
 	}
@@ -50,10 +52,10 @@ final class CurrencyConverterCache implements OnExchangeRatesAvailableListener
 	}
 	
 	public synchronized void onExchangeRatesAvailable(CurrencyConverter converter,
-			Date gmtDate, Currency baseCurrency)
+			Date gmtDate, Currency baseCurrency, boolean error)
 	{
 		for (OnExchangeRatesAvailableListener listener : mListeners)
-			listener.onExchangeRatesAvailable(converter, gmtDate, baseCurrency);
+			listener.onExchangeRatesAvailable(converter, gmtDate, baseCurrency, error);
 	}
 	
 	public synchronized void addOnExchangeRatesAvailableListener(

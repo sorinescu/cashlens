@@ -18,10 +18,13 @@ package com.udesign.cashlens;
 import java.security.InvalidParameterException;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.util.Pair;
 
 import com.udesign.cashlens.CashLensStorage.Currency;
 
@@ -30,7 +33,7 @@ abstract class CurrencyConverter
 	public interface OnExchangeRatesAvailableListener
 	{
 		public void onExchangeRatesAvailable(CurrencyConverter converter, Date gmtDate, 
-				Currency baseCurrency);
+				Currency baseCurrency, boolean error);
 	}
 	
 	protected static class ExchangeRates
@@ -38,15 +41,29 @@ abstract class CurrencyConverter
 		Date gmtDate;
 		Currency baseCurrency;
 		HashMap<Integer,Float> currencyIdToRate;
+		String errorMsg;
 	}
+	
+	protected Context mAppContext;
+
+	private String mLastError = "";
 	
 	// Unfortunately there's no "typedef" in Java, so this must be explained.
 	// Maps Date to a map of base currency IDs to a map of derived currency IDs to 
 	// their rates when converted from the base currency. 
-	HashMap<Date, HashMap<Integer, HashMap<Integer,Float> > > mDatesToRates = 
+	private HashMap<Date, HashMap<Integer, HashMap<Integer,Float> > > mDatesToRates = 
 			new HashMap<Date, HashMap<Integer,HashMap<Integer,Float>>>();
 	
-	OnExchangeRatesAvailableListener mListener;
+	// Contains the pairs of Date and base currency ID for which an async load
+	// has been triggered, to avoid loading them again
+	private HashSet<Pair<Date, Integer> > mPendingLoads = new HashSet<Pair<Date,Integer>>();
+	
+	private OnExchangeRatesAvailableListener mListener;
+	
+	public CurrencyConverter(Context context)
+	{
+		mAppContext = context.getApplicationContext();
+	}
 	
 	/**
 	 * Called by the async task to retrieve the exchange rates.
@@ -59,7 +76,7 @@ abstract class CurrencyConverter
 	private synchronized HashMap<Integer,Float> getExchangeRates(Date gmtDate, Currency baseCurrency)
 	{
 		HashMap<Integer, HashMap<Integer,Float>> baseCurrencyToRates = 
-				mDatesToRates.get(gmtDate);
+				mDatesToRates.get(CashLensUtils.startOfDay(gmtDate));
 		if (baseCurrencyToRates == null)
 			return null;
 		
@@ -68,6 +85,13 @@ abstract class CurrencyConverter
 	
 	private synchronized void addExchangeRates(ExchangeRates rates)
 	{
+		// rates.gmtDate must be at the beginning of the day !
+		
+		// first clear "loading" status
+		Pair<Date,Integer> pending = new Pair<Date, Integer>(
+				rates.gmtDate, rates.baseCurrency.id);
+		mPendingLoads.remove(pending);
+		
 		HashMap<Integer, HashMap<Integer,Float>> baseCurrencyToRates = 
 				mDatesToRates.get(rates.gmtDate);
 		if (baseCurrencyToRates == null)
@@ -78,8 +102,6 @@ abstract class CurrencyConverter
 		}
 		else
 			baseCurrencyToRates.put(rates.baseCurrency.id, rates.currencyIdToRate);
-		
-		notifyExchangeRatesAvailable(rates.gmtDate, rates.baseCurrency);
 	}
 	
 	public synchronized void setOnExchangeRatesAvailableListener(
@@ -89,30 +111,40 @@ abstract class CurrencyConverter
 	}
 	
 	private synchronized void notifyExchangeRatesAvailable(Date gmtDate, 
-			Currency baseCurrency)
+			Currency baseCurrency, boolean error)
 	{
 		if (mListener != null)
-			mListener.onExchangeRatesAvailable(this, gmtDate, baseCurrency);
+			mListener.onExchangeRatesAvailable(this, gmtDate, baseCurrency, error);
 	}
 	
 	/**
 	 * 
-	 * @param gmtDate
-	 * @param baseCurrency
+	 * @param gmtDate GMT date of conversion
+	 * @param baseCurrency base (destination of conversion) currency
+	 * @return false if the same rates are already being retrieved, true if they have
+	 *    been successfully queued for retrieval or they are already available
 	 */
-	public void getExchangeRatesAsync(Date gmtDate, Currency baseCurrency)
+	public synchronized boolean getExchangeRatesAsync(Date gmtDate, Currency baseCurrency)
 	{
+		Date date = CashLensUtils.startOfDay(gmtDate);
+		
+		Pair<Date,Integer> pending = new Pair<Date,Integer>(date, baseCurrency.id);
+		if (mPendingLoads.contains(pending))
+			return false;	// already waiting for load
+		
 		if (getExchangeRates(gmtDate, baseCurrency) != null)
 		{
 			// already cached; notify listener
-			notifyExchangeRatesAvailable(gmtDate, baseCurrency);
-			return;
+			notifyExchangeRatesAvailable(date, baseCurrency, false);
+			return true;
 		}
+		
+		mPendingLoads.add(pending);
 		
 		ExchangeRates rates = new ExchangeRates();
 		
 		rates.baseCurrency = baseCurrency;
-		rates.gmtDate = gmtDate;
+		rates.gmtDate = date;
 		
 		new AsyncTask<ExchangeRates,Void,ExchangeRates>()
 		{
@@ -133,9 +165,39 @@ abstract class CurrencyConverter
 			protected void onPostExecute(ExchangeRates rates)
 			{
 				// this will be executed on the UI thread
-				addExchangeRates(rates);
+				if (rates.errorMsg == null)	// no error
+					addExchangeRates(rates);
+				else
+					mLastError = rates.errorMsg;
+
+				// Whether there was an error or not, notify caller 
+				notifyExchangeRatesAvailable(rates.gmtDate, rates.baseCurrency, 
+						rates.errorMsg != null);
 			}
 		}.execute(rates);	// will cache the result on finish
+		
+		return true;
+	}
+	
+	public String getLastError()
+	{
+		return mLastError;
+	}
+	
+	/**
+	 * Verifies if the conversion is possible for the supplied parameters.
+	 * If the return value is false, getExchangeRatesAsync() must be called
+	 * before attempting a conversion.
+	 * @param gmtDate GMT date of conversion
+	 * @param fromCurrency source currency
+	 * @param toCurrency destination currency
+	 * @return true if the conversion is possible at this time
+	 */
+	public boolean canConvert(Date gmtDate, Currency fromCurrency, Currency toCurrency)
+	{
+		HashMap<Integer,Float> rates = getExchangeRates(gmtDate, toCurrency);
+		
+		return rates != null && rates.containsKey(fromCurrency.id);
 	}
 	
 	/**
@@ -149,7 +211,14 @@ abstract class CurrencyConverter
 	 */
 	public int convert(Date gmtDate, Currency fromCurrency, Currency toCurrency, int feePercent, int amount)
 	{
-		return convert(gmtDate, fromCurrency, toCurrency, amount * (100 + feePercent) / 100);
+		// Assumes the rates exist; getExchangeRatesAsync must be called some time before this.
+		HashMap<Integer,Float> rates = getExchangeRates(gmtDate, toCurrency);
+		
+		if (rates == null || !rates.containsKey(fromCurrency.id))
+			throw new InvalidParameterException("There is no conversion from " + fromCurrency.code
+					+ " to " + toCurrency.code);
+		
+		return (int)((double)amount * (10000 + feePercent) / (10000 * rates.get(fromCurrency.id).floatValue()));
 	}
 
 	/**
@@ -165,15 +234,10 @@ abstract class CurrencyConverter
 	 */
 	public int convert(Date gmtDate, Currency fromCurrency, Currency toCurrency, int amount)
 	{
-		// Assumes the rates exist; getExchangeRatesAsync must be called some time before this.
-		HashMap<Integer,Float> rates = getExchangeRates(gmtDate, toCurrency);
-		
-		if (!rates.containsKey(fromCurrency.id))
-			throw new InvalidParameterException("There is no conversion from " + fromCurrency.code
-					+ " to " + toCurrency.code);
-		
-		return (int)(amount / rates.get(fromCurrency.id).floatValue());
+		return convert(gmtDate, fromCurrency, toCurrency, 0, amount);
 	}
+	
+	public abstract Set<Currency> supportedCurrencies();
 	
 	/**
 	 * Returns the human-friendly name of the currency converter.
