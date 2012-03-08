@@ -335,4 +335,55 @@ final class AppSettings
 		mSharedPrefsEditor.putInt("expenseOutlineColor", expenseOutlineColor);
 		mSharedPrefsEditor.commit();
 	}
+	
+	/**
+	 * @return the lastFromCurrency
+	 */
+	public int getLastFromCurrency()
+	{
+		return mSharedPrefs.getInt("lastFromCurrency", 0);
+	}
+
+	/**
+	 * @param lastFromCurrency the lastFromCurrency to set
+	 */
+	public void setLastFromCurrency(int lastFromCurrency)
+	{
+		mSharedPrefsEditor.putInt("lastFromCurrency", lastFromCurrency);
+		mSharedPrefsEditor.commit();
+	}
+
+	/**
+	 * @return the lastToCurrency
+	 */
+	public int getLastToCurrency()
+	{
+		return mSharedPrefs.getInt("lastToCurrency", 0);
+	}
+
+	/**
+	 * @param lastToCurrency the lastToCurrency to set
+	 */
+	public void setLastToCurrency(int lastToCurrency)
+	{
+		mSharedPrefsEditor.putInt("lastToCurrency", lastToCurrency);
+		mSharedPrefsEditor.commit();
+	}
+
+	/**
+	 * @return the lastUsedExchangeService
+	 */
+	public String getLastUsedExchangeService()
+	{
+		return mSharedPrefs.getString("lastUsedExchangeService", "");
+	}
+
+	/**
+	 * @param lastUsedExchangeService the lastUsedExchangeService to set
+	 */
+	public void setLastUsedExchangeService(String lastUsedExchangeService)
+	{
+		mSharedPrefsEditor.putString("lastUsedExchangeService", lastUsedExchangeService);
+		mSharedPrefsEditor.commit();
+	}
 }
