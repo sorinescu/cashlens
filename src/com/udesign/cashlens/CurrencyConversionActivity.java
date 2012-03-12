@@ -41,6 +41,7 @@ import android.widget.DatePicker;
 import android.widget.DatePicker.OnDateChangedListener;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
 import android.widget.TextView;
@@ -64,11 +65,11 @@ public final class CurrencyConversionActivity extends Activity implements
 	CashLensStorage mStorage;
 	CurrencyConverterCache mConvertCache;
 
-	private static class SpinnerAdapterConverters extends ArrayAdapter<CurrencyConverter>
+	private static class ConvertersAdapter extends ArrayAdapter<CurrencyConverter>
 	{
 		private LayoutInflater mInflater;
 		
-		public SpinnerAdapterConverters(Context context, List<CurrencyConverter> objects)
+		public ConvertersAdapter(Context context, List<CurrencyConverter> objects)
 		{
 			super(context, R.id.textView1, objects);
 			//setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -142,9 +143,16 @@ public final class CurrencyConversionActivity extends Activity implements
 		int utcDate = getIntent().getIntExtra("date", 0);
 		int amount = getIntent().getIntExtra("amount", 100);
 		
+		boolean hasUseBtn = true;
+		
 		if (toCurrencyId == 0)
+		{
 			toCurrencyId = settings.getLastToCurrency();
-
+			
+			// this wasn't run from Add expense activity; back button is enough
+			hasUseBtn = false;
+		}
+		
 		int fromCurrencyId = settings.getLastFromCurrency(); 
 		String lastService = settings.getLastUsedExchangeService();
 		
@@ -169,7 +177,7 @@ public final class CurrencyConversionActivity extends Activity implements
 		mDate.init(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DATE), this);
 		
 		// Get list of exchange services with icons
-		SpinnerAdapterConverters converters = new SpinnerAdapterConverters(this, 
+		ConvertersAdapter converters = new ConvertersAdapter(this, 
 				mConvertCache.getConverters());
 		mService.setAdapter(converters);
 		
@@ -236,6 +244,15 @@ public final class CurrencyConversionActivity extends Activity implements
 				finish();
 			}
 		});
+		
+		if (!hasUseBtn)
+		{
+			mUseBtn.setVisibility(View.GONE);
+			
+			RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) mResult.getLayoutParams();
+			params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+			mResult.setLayoutParams(params);
+		}
 		
 		TextWatcher textChanged = new TextWatcher()
 		{
