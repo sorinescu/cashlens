@@ -15,4 +15,9 @@
     	android:title="@string/settings" 
     	android:icon="@android:drawable/ic_menu_preferences"
     />
+    <item 
+    	android:id="@+id/currency_conversion" 
+    	android:title="@string/currency_conversion" 
+    	android:icon="@drawable/ic_menu_curr_conv"
+    />
 </menu>

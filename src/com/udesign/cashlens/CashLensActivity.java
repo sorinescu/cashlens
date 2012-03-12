@@ -309,11 +309,11 @@ public final class CashLensActivity extends Activity
 			startActivityForResult(settings, RESULT_CODE_SETTINGS);
 	        return true;
 
-//	    case R.id.currency_conversion:
-//			Intent currConv = new Intent(CashLensActivity.this,
-//					CurrencyConversionActivity.class);
-//			startActivity(currConv);
-//			return true;
+	    case R.id.currency_conversion:
+			Intent currConv = new Intent(CashLensActivity.this,
+					CurrencyConversionActivity.class);
+			startActivity(currConv);
+			return true;
 			
 	    default:
 	        return super.onOptionsItemSelected(item);
