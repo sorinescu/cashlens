@@ -21,6 +21,7 @@ import com.udesign.cashlens.CashLensStorage.Account;
 import com.udesign.cashlens.CashLensStorage.Expense;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.text.Editable;
@@ -49,6 +50,7 @@ public class EditExpenseActivity extends Activity
 	protected TimePickerWithDialog mTimePicker;
 	protected Button mSaveButton;
 	protected Button mDiscardButton;
+	protected Button mCurrConvertButton;
 	protected boolean mChanged;
 	
 	/* (non-Javadoc)
@@ -86,6 +88,7 @@ public class EditExpenseActivity extends Activity
 
 		mSaveButton = (Button)findViewById(R.id.btnSave);
 		mDiscardButton = (Button)findViewById(R.id.btnDiscard);
+		mCurrConvertButton = (Button)findViewById(R.id.btnCurrencyConvert);
 		mAmountTxt = (EditText)findViewById(R.id.amountTxt);
 		mAccountSpinner = (Spinner)findViewById(R.id.spinAccount);
 		mDatePicker = (DatePickerWithDialog)findViewById(R.id.datePicker1);
@@ -204,6 +207,19 @@ public class EditExpenseActivity extends Activity
 			}
 		});
 		
+		mCurrConvertButton.setOnClickListener(new OnClickListener()
+		{
+			public void onClick(View v)
+			{
+				Intent currConv = new Intent(EditExpenseActivity.this,
+						CurrencyConversionActivity.class);
+
+				currConv.putExtra("to_currency", mExpenseMod.currencyId());
+				currConv.putExtra("amount", mExpenseMod.amount);
+				startActivityForResult(currConv, 0);
+			}
+		});
+		
 		updateSaveEnabled();		
 	}
 
@@ -222,5 +238,21 @@ public class EditExpenseActivity extends Activity
 		mAccountsAdapter.releaseByActivity();
 		
 		super.onDestroy();
+	}
+
+	/* (non-Javadoc)
+	 * @see android.app.Activity#onActivityResult(int, int, android.content.Intent)
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
+		super.onActivityResult(requestCode, resultCode, data);
+
+		if (resultCode == RESULT_CANCELED)
+			return;
+		
+		// resultCode is actually converted amount (fixed point)
+		mExpenseMod.amount = resultCode;
+		mAmountTxt.setText(mExpenseMod.amountToString());
 	}
 }

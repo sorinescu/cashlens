@@ -40,11 +40,28 @@
 		        android:text="@string/amount"
 		        android:textAppearance="?android:attr/textAppearanceLarge" />
 		
-		    <EditText
-		        android:id="@+id/amountTxt"
-		        android:layout_width="match_parent"
-		        android:layout_height="wrap_content"
-		        android:inputType="numberDecimal" />
+		    <RelativeLayout 
+		    	android:layout_width="match_parent"
+		    	android:layout_height="wrap_content" >
+		    
+			    <EditText
+			        android:id="@+id/amountTxt"
+			        android:layout_alignParentLeft="true"
+			        android:layout_alignParentTop="true"
+			        android:layout_width="match_parent"
+			        android:layout_height="wrap_content"
+			        android:layout_toLeftOf="@+id/btnCurrencyConvert"
+			        android:inputType="numberDecimal" />
+			    
+			    <Button 
+			        android:id="@+id/btnCurrencyConvert"
+			        android:layout_alignParentRight="true"
+			        android:layout_alignParentTop="true"
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:text="€->$" />
+			    		        		        
+		    </RelativeLayout>
 
 		    <TextView
 		        android:id="@+id/textView5"
