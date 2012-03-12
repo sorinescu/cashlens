@@ -848,6 +848,9 @@ public class AddExpenseActivity extends Activity
 	{
 		super.onActivityResult(requestCode, resultCode, data);
 		
+		if (resultCode == RESULT_CANCELED)
+			return;
+		
 		// resultCode is actually converted amount (fixed point)
 		setExpenseFixedPoint(resultCode);
 		updateExpenseText();
